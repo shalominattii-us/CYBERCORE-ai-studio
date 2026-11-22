@@ -1,16 +1,16 @@
-# AEGENTIX Revenue Engines - Requirements
+# AEGENTIX & CYBERCORE Engines - Requirements
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+redis>=5.0.0
+lightgbm>=4.5.0
+scikit-learn>=1.5.0
 web3>=6.20.0
 aiohttp>=3.9.0
 websockets>=12.0
-asyncio
 aiofiles>=23.0.0
 python-dotenv>=1.0.0
 pydantic>=2.5.0
-decimal
-dataclasses
-asyncio
 psutil>=5.9.0
-sqlite3
 requests>=2.31.0
 numpy>=1.24.0
 pandas>=2.0.0

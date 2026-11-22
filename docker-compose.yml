@@ -1,4 +1,58 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: aegentix-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  worker-prediction:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: cybercore-worker-prediction
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - WORKER_ROLE=prediction
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  worker-cybergym:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: cybercore-worker-cybergym
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    environment:
+      - WORKER_ROLE=cybergym
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   aegentix-core:
     build:
       context: .
@@ -12,8 +66,18 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
+      - REDIS_URL=redis://redis:6379/0
+      - PREDICTION_WORKER_URL=http://worker-prediction:8000
+      - CYBERGYM_WORKER_URL=http://worker-cybergym:8000
     volumes:
       - aegentix-brain:/app/brain
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker-prediction:
+        condition: service_healthy
+      worker-cybergym:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/mcp/info"]
       interval: 10s

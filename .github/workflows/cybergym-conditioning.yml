@@ -1,25 +1,40 @@
-name: CyberGym Conditioning & Rate-of-Improvement Check
+name: CyberGym Conditioning & Prediction Gate
 
 on:
   push:
+    branches: [ main ]
     paths:
+      - 'engines/cybergym/**'
+      - 'engines/prediction/**'
+      - 'engines/worker_api.py'
       - 'src/components/AgenticAmericaView.tsx'
       - 'server.ts'
   workflow_dispatch:
 
 jobs:
-  run-drills:
-    name: CyberGym Athlete Readiness Sparring
+  cybergym-conditioning:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Monorepo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify CyberGym Canonical Drills
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv & dependencies
         run: |
-          echo "Syncing with upstream https://github.com/shalominattii-us/cybergym..."
-          echo "Drill: log_triage_01 (IOC Triage Precision) -> PASSED (99.4%)"
-          echo "Drill: tool_outage_01 (Mid-Task Fault Recovery) -> PASSED (98.6%)"
-          echo "Drill: ctx_stamina_01 (Context Stamina 64k) -> PASSED (98.2%)"
-          echo "Rate of Improvement: +3.8% (Target: >= +3.0%)"
+          pip install uv
+          uv venv .venv
+          uv pip install --python .venv/bin/python numpy pandas scikit-learn lightgbm requests fastapi uvicorn pydantic
+
+      - name: Run CyberGym Clean Lab Conditioning
+        run: |
+          .venv/bin/python -m engines.cybergym.lab_studio --persona athlete --topic "Peak Mesocycle Readiness"
+          .venv/bin/python -m engines.cybergym.lab_studio --persona research_analyst --topic "Cross-Domain Signal Synthesis"
+          .venv/bin/python -m engines.cybergym.lab_studio --persona constitutional_law_scholar --topic "Executive Authority & AI Governance"
+
+      - name: Run Prediction Engine Smoke Test
+        run: |
+          .venv/bin/python -m engines.prediction.cli --symbol BTC --days 30 --horizon 1
