@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from engines.cybergym.lab_studio import CyberGymLab
 from engines.prediction.ensemble import PredictionEngine
+from engines.starbet.engine import StarbetEngine
 
 # Structured JSON logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -26,12 +27,15 @@ def log_json(event: str, **kwargs: object) -> None:
 app = FastAPI(title="CYBERCORE Worker API", version="1.0.0")
 prediction_engine = PredictionEngine()
 cybergym_lab = CyberGymLab()
+starbet_engine = StarbetEngine()
 
 METRICS = {
     "predict_requests_total": 0,
     "predict_errors_total": 0,
     "cybergym_requests_total": 0,
     "cybergym_errors_total": 0,
+    "starbet_requests_total": 0,
+    "starbet_errors_total": 0,
 }
 
 
@@ -95,4 +99,35 @@ def run_cybergym(req: CyberGymRequest) -> dict:
     except Exception as exc:
         METRICS["cybergym_errors_total"] += 1
         log_json("cybergym_error", persona=req.persona, error=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+class StarbetRequest(BaseModel):
+    league: str = "NFL"
+    matchup: str
+    home_odds: int = -110
+    away_odds: int = -110
+    state_code: str = "NJ"
+
+
+@app.post("/starbet/predict")
+def run_starbet(req: StarbetRequest) -> dict:
+    METRICS["starbet_requests_total"] += 1
+    start = time.time()
+    try:
+        result = starbet_engine.predict_matchup(
+            league=req.league,
+            matchup=req.matchup,
+            home_odds=req.home_odds,
+            away_odds=req.away_odds,
+            state_code=req.state_code,
+        )
+        log_json("starbet_ok", league=req.league, matchup=req.matchup, duration_ms=round((time.time() - start) * 1000, 2))
+        return result.to_dict()
+    except ValueError as exc:
+        METRICS["starbet_errors_total"] += 1
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        METRICS["starbet_errors_total"] += 1
+        log_json("starbet_error", league=req.league, error=str(exc))
         raise HTTPException(status_code=500, detail=str(exc)) from exc
