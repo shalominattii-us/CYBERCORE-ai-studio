@@ -1,9 +1,15 @@
+interface R2BucketLike {
+  list(options?: { limit?: number; prefix?: string }): Promise<{ objects: Array<{ key: string; size: number; uploaded: Date }> }>;
+  get(key: string): Promise<{ body: ReadableStream | null; httpMetadata?: { contentType?: string } } | null>;
+}
+
 export interface Env {
   ORIGIN_URL: string;
   FALLBACK_ORIGIN_URL: string;
   MIN_POSITIVE_ALPHA_USD: string;
   EDGE_WORKER_VERSION?: string;
   EDGE_HMAC_SECRET?: string;
+  AEGENTIX_ASSETS?: R2BucketLike;
 }
 
 interface CoinbaseSpotQuote {
@@ -252,6 +258,40 @@ export default {
         source: 'coinbase-v2-public-spot',
         quotes,
         timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (url.pathname === '/edge/r2/list') {
+      if (!env.AEGENTIX_ASSETS) {
+        return jsonResponse({ ok: false, error: 'R2 bucket AEGENTIX_ASSETS not bound', colo }, 503);
+      }
+      const prefix = url.searchParams.get('prefix') || undefined;
+      const listed = await env.AEGENTIX_ASSETS.list({ limit: 100, prefix });
+      return jsonResponse({
+        ok: true,
+        bucket: 'space-bunny-alpha',
+        colo,
+        count: listed.objects.length,
+        objects: listed.objects.map((o) => ({ key: o.key, size: o.size, uploaded: o.uploaded })),
+      });
+    }
+
+    if (url.pathname.startsWith('/edge/r2/object/')) {
+      if (!env.AEGENTIX_ASSETS) {
+        return jsonResponse({ ok: false, error: 'R2 bucket AEGENTIX_ASSETS not bound', colo }, 503);
+      }
+      const key = decodeURIComponent(url.pathname.slice('/edge/r2/object/'.length));
+      const obj = await env.AEGENTIX_ASSETS.get(key);
+      if (!obj || !obj.body) {
+        return jsonResponse({ ok: false, error: 'Object not found', key }, 404);
+      }
+      return new Response(obj.body, {
+        status: 200,
+        headers: {
+          'content-type': obj.httpMetadata?.contentType || 'application/octet-stream',
+          'x-edge-colo': colo,
+          'access-control-allow-origin': '*',
+        },
       });
     }
 

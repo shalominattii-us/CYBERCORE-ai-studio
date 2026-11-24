@@ -19,3 +19,8 @@ crons = ["* * * * *"]
 
 [observability]
 enabled = true
+
+[[r2_buckets]]
+binding = "AEGENTIX_ASSETS"
+bucket_name = "space-bunny-alpha"
+

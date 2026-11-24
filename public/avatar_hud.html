@@ -1698,5 +1698,89 @@
       renderCarrierRoster();
     })();
   </script>
+
+  <!-- Aegentix Avatar Voice & Text Command Dock (Web Speech API + /api/bot-hq/messages) -->
+  <div id="avatarVoiceDock" style="position:fixed;bottom:16px;right:16px;width:340px;background:#0D121B;border:1px solid rgba(16,185,129,0.35);border-radius:12px;padding:12px;font-family:monospace;color:#E2E8F0;z-index:9999;box-shadow:0 12px 32px rgba(0,0,0,0.6);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:11px;font-weight:700;color:#34D399;">AVATAR VOICE &amp; TEXT CONDUIT</span>
+      <button id="btnAvatarSpeakToggle" style="background:#141C2B;color:#34D399;border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;">TTS: ON</button>
+    </div>
+    <div id="avatarChatLog" style="height:120px;overflow-y:auto;background:#080B10;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px;font-size:11px;margin-bottom:8px;line-height:1.4;">
+      <div style="color:#64748B;">[SYSTEM] Voice &amp; text conduit ready. Connected to /api/bot-hq/messages.</div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <input id="avatarChatInput" type="text" placeholder="Type or speak command..." style="flex:1;background:#080B10;border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:6px;padding:6px 8px;font-size:11px;font-family:monospace;" />
+      <button id="btnAvatarMic" style="background:#141C2B;color:#38BDF8;border:1px solid rgba(56,189,248,0.3);border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;">MIC</button>
+      <button id="btnAvatarSend" style="background:#10B981;color:#052E16;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">SEND</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var ttsEnabled = true;
+      var logEl = document.getElementById("avatarChatLog");
+      var inputEl = document.getElementById("avatarChatInput");
+      var ttsBtn = document.getElementById("btnAvatarSpeakToggle");
+      var micBtn = document.getElementById("btnAvatarMic");
+      var sendBtn = document.getElementById("btnAvatarSend");
+
+      function appendLine(who, text, color) {
+        var row = document.createElement("div");
+        row.style.color = color || "#E2E8F0";
+        row.textContent = "[" + who + "] " + text;
+        logEl.appendChild(row);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function speakText(text) {
+        if (!ttsEnabled || !window.speechSynthesis) return;
+        try {
+          window.speechSynthesis.cancel();
+          var u = new SpeechSynthesisUtterance(text);
+          u.rate = 1.02;
+          window.speechSynthesis.speak(u);
+        } catch (e) {}
+      }
+
+      async function sendCommand(text) {
+        var trimmed = (text || "").trim();
+        if (!trimmed) return;
+        appendLine("YOU", trimmed, "#38BDF8");
+        inputEl.value = "";
+        try {
+          var res = await fetch("/api/bot-hq/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ channelId: "championship-war-room", content: trimmed })
+          });
+          if (res.ok) {
+            var data = await res.json();
+            var reply = (data && data.reply && data.reply.content) ? data.reply.content : "Command dispatched to Bot-HQ war room.";
+            appendLine("AGENT", reply, "#34D399");
+            speakText(reply);
+            return;
+          }
+        } catch (e) {}
+        var fallback = "Dispatched locally: " + trimmed;
+        appendLine("HUD", fallback, "#34D399");
+        speakText(fallback);
+      }
+
+      ttsBtn.addEventListener("click", function () {
+        ttsEnabled = !ttsEnabled;
+        ttsBtn.textContent = ttsEnabled ? "TTS: ON" : "TTS: OFF";
+      });
+      sendBtn.addEventListener("click", function () { sendCommand(inputEl.value); });
+      inputEl.addEventListener("keydown", function (e) { if (e.key === "Enter") sendCommand(inputEl.value); });
+      micBtn.addEventListener("click", function () {
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { appendLine("SYSTEM", "SpeechRecognition unavailable in this browser.", "#F59E0B"); return; }
+        var rec = new SR();
+        rec.lang = "en-US";
+        rec.onresult = function (ev) { sendCommand(ev.results[0][0].transcript); };
+        rec.start();
+        appendLine("MIC", "Listening...", "#38BDF8");
+      });
+    })();
+  </script>
 </body>
 </html>
