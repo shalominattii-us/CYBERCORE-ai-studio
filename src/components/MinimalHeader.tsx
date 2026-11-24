@@ -35,6 +35,7 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
     { id: 'MT5_MOBILE_EA', label: 'MT5 Mobile', tag: 'No-VPS' },
     { id: 'ALPACA_MCP_BOT', label: 'Alpaca MCP', tag: 'Paper' },
     { id: 'FORMAL_VERIFICATION', label: 'Lean 4 Proof', tag: 'Gate' },
+    { id: 'AI_ECOSYSTEM_HUB', label: 'AI Hub', tag: '10 Tools' },
     { id: 'JARVIS_BUILDER', label: 'Jarvis Dial Out', tag: ':8081' },
     { id: 'DEVICE_SANDBOX_MAPPING', label: 'Desktop Sync', tag: 'Bridge' },
   ];

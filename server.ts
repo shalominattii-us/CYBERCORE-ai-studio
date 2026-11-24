@@ -54,6 +54,7 @@ import { desktopBridgeRouter } from './src/api/desktopBridge.ts';
 import { mt5MobileBridgeRouter } from './src/api/mt5MobileBridge.ts';
 import { alpacaMcpBotRouter } from './src/api/alpacaMcpBot.ts';
 import { formalVerifierRouter } from './src/api/formalVerifier.ts';
+import { aiEcosystemHubRouter } from './src/api/aiEcosystemHub.ts';
 
 dotenv.config();
 
@@ -197,6 +198,7 @@ app.use('/api/compliance', complianceChainRouter);
 app.use('/api/mt5-mobile', mt5MobileBridgeRouter);
 app.use('/api/alpaca-bot', alpacaMcpBotRouter);
 app.use('/api/formal-verify', formalVerifierRouter);
+app.use('/api/ai-hub', aiEcosystemHubRouter);
 app.use(desktopBridgeRouter);
 
 // Standard health endpoints for Cloud Run, load balancers & Aegentix health stack
