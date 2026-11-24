@@ -293,15 +293,8 @@ export default function App() {
 
   const getInitialTab = () => {
     try {
-      const fromPath = resolveTabFromInput(window.location.pathname);
-      if (fromPath) return fromPath;
       const fromHash = resolveTabFromInput(window.location.hash);
       if (fromHash) return fromHash;
-      const stored = localStorage.getItem('aegentix_active_tab');
-      if (stored) {
-        const fromStored = resolveTabFromInput(stored);
-        if (fromStored) return fromStored;
-      }
     } catch {}
     return 'COINBASE_CHAMPIONSHIP';
   };

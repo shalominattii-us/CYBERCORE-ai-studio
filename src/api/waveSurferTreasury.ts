@@ -185,13 +185,13 @@ function buildBadgeProgress(activeTier: SurfTierConfig, streak: number): BadgePr
 const nowIso = new Date().toISOString();
 
 const state: EngineState = {
-  currentStreak: 5,
-  bestStreak: 5,
-  activeWaveLegs: 3,
-  deployableTrancheUsd: 1000,
-  escrowReserveUsd: 120,
-  lockedVaultProfitsUsd: 84.5,
-  cumulativeWavePnlUsd: 142.8,
+  currentStreak: 0,
+  bestStreak: 0,
+  activeWaveLegs: 0,
+  deployableTrancheUsd: 0,
+  escrowReserveUsd: 0,
+  lockedVaultProfitsUsd: 0,
+  cumulativeWavePnlUsd: 0,
   unbondedOnChainBalanceUsd: 0,
   lastRebalancedAt: nowIso,
   history: [
