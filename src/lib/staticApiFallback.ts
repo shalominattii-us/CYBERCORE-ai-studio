@@ -22,6 +22,16 @@ function handleStaticApi(pathname: string, method: string, bodyText?: string): R
     try { payload = JSON.parse(bodyText); } catch {}
   }
 
+  if (pathname === '/api/auth/status') {
+    return jsonRes({
+      authenticated: false,
+      provider: 'firebase-oauth',
+      cookiePresent: false,
+      mode: 'cloud-static',
+      timestamp: now,
+    });
+  }
+
   if (pathname === '/api/domain/status') {
     return jsonRes({
       status: 'operational',

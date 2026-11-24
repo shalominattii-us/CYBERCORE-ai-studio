@@ -13,6 +13,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { SovereignSeal } from './SovereignSeal';
+import { AuthIndicator } from './AuthIndicator';
 
 interface MinimalHeaderProps {
   currentTab: string;
@@ -93,6 +94,7 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
 
         {/* Right Status Indicator */}
         <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+          <AuthIndicator />
           <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0D121B] border border-white/[0.06] text-zinc-400 tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>Base {gasPriceGwei} Gwei</span>
