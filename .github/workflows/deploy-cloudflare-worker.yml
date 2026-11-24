@@ -23,7 +23,20 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Check Cloudflare credentials
+        id: cf_check
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CF_TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            echo "CLOUDFLARE_API_TOKEN secret not set yet — skipping live deploy (no failure)."
+          fi
+
       - name: Deploy Worker via Wrangler
+        if: steps.cf_check.outputs.has_token == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
