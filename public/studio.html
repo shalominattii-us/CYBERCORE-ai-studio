@@ -181,13 +181,13 @@
       <div class="kpi-grid">
         <div class="card">
           <div class="kpi-label">Championship Score</div>
-          <div class="kpi-val mono" id="kpiScore">3,842.10</div>
-          <div class="kpi-delta mono">+142.8 PTS (24h) · Sharpe 3.42</div>
+          <div class="kpi-val mono" id="kpiScore">0.00</div>
+          <div class="kpi-delta mono">Awaiting live session executions</div>
         </div>
         <div class="card">
           <div class="kpi-label">Cumulative Net Alpha</div>
-          <div class="kpi-val mono" id="kpiAlpha" style="color:var(--emerald)">+$14,892.40</div>
-          <div class="kpi-delta mono">78.4% Win Rate · 0.84% MDD</div>
+          <div class="kpi-val mono" id="kpiAlpha" style="color:var(--emerald)">$0.00</div>
+          <div class="kpi-delta mono">0 Executions · 0.00% MDD</div>
         </div>
         <div class="card">
           <div class="kpi-label">ERC-4337 Paymaster Gas</div>
@@ -263,15 +263,15 @@
     <!-- VIEW 2: WAVE SURFER -->
     <section id="view-wavesurfer" class="view">
       <div class="kpi-grid">
-        <div class="card"><div class="kpi-label">Active Clearance</div><div class="kpi-val mono" style="font-size:18px;color:var(--cyan)">BARREL_SURFER_VANGUARD</div><div class="kpi-delta mono">Tier 3 · Max 8 Wave Legs</div></div>
-        <div class="card"><div class="kpi-label">Vessel Tranche</div><div class="kpi-val mono">$1,000.00</div><div class="kpi-delta mono">12% Escrow Reserve Locked ($120)</div></div>
-        <div class="card"><div class="kpi-label">Positive Streak</div><div class="kpi-val mono" id="wsStreak">5</div><div class="kpi-delta mono">Next Tier Unlock: 8 Streak</div></div>
-        <div class="card"><div class="kpi-label">Wave Cumulative PnL</div><div class="kpi-val mono" id="wsPnl" style="color:var(--emerald)">+$184.50</div><div class="kpi-delta mono">Zero-Loss Momentum Filter</div></div>
+        <div class="card"><div class="kpi-label">Active Clearance</div><div class="kpi-val mono" style="font-size:18px;color:var(--cyan)">UNBONDED</div><div class="kpi-delta mono">Awaiting funded tranche</div></div>
+        <div class="card"><div class="kpi-label">Vessel Tranche</div><div class="kpi-val mono">$0.00</div><div class="kpi-delta mono">12% Escrow Reserve ($0.00)</div></div>
+        <div class="card"><div class="kpi-label">Positive Streak</div><div class="kpi-val mono" id="wsStreak">0</div><div class="kpi-delta mono">Verified session streak</div></div>
+        <div class="card"><div class="kpi-label">Wave Cumulative PnL</div><div class="kpi-val mono" id="wsPnl" style="color:var(--emerald)">$0.00</div><div class="kpi-delta mono">Zero-Fake-Balance Enforced</div></div>
       </div>
       <div class="card">
         <div class="section-head">
           <div class="section-title">Live Wave Momentum Oscillator</div>
-          <button class="btn btn-cyan" onclick="rideWave()">Ride Wave Leg (+EV)</button>
+          <button class="btn btn-cyan" onclick="rideWave()">Record Live Wave Check</button>
         </div>
         <canvas id="waveCanvas" width="1200" height="240" style="width:100%;height:240px;display:block;"></canvas>
       </div>
@@ -286,22 +286,22 @@
             <span class="tag mono">KYBER-1024 + DILITHIUM</span>
           </div>
           <canvas id="radarCanvas" width="300" height="300" style="border-radius:50%;border:1px solid rgba(16,185,129,0.28);"></canvas>
-          <div class="mono" id="pqKey" style="margin-top:16px;font-size:11px;color:#6EE7B7;">PQ-KEY: 0x9f4a...88c2e1 (ROTATED)</div>
+          <div class="mono" id="pqKey" style="margin-top:16px;font-size:11px;color:#6EE7B7;">PQ-KEY: AWAITING ROTATION</div>
           <button class="btn btn-emerald" style="margin-top:12px;" onclick="rotatePQ()">Rotate Post-Quantum Keys</button>
         </div>
         <div class="card">
           <div class="section-head">
             <div class="section-title">US-SQTE Quantum Treasury Vaults</div>
-            <span class="tag mono">RECONCILED</span>
+            <span class="tag mono">ZERO-FAKE-BALANCE</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
             <div style="background:#070A10;border:1px solid var(--border);border-radius:10px;padding:14px;">
               <div class="kpi-label">Sovereign Reserve Pool</div>
-              <div class="mono" style="font-size:20px;font-weight:700;color:#FFF;">$250,000.00 <span style="font-size:11px;color:var(--emerald)">SIMULATED VAULT</span></div>
+              <div class="mono" style="font-size:20px;font-weight:700;color:#FFF;">$0.00 <span style="font-size:11px;color:#94A3B8">UNBONDED</span></div>
             </div>
             <div style="background:#070A10;border:1px solid var(--border);border-radius:10px;padding:14px;">
               <div class="kpi-label">Post-Quantum Escrow</div>
-              <div class="mono" style="font-size:20px;font-weight:700;color:var(--cyan);">$42,500.00 <span style="font-size:11px;color:#94A3B8">ML-KEM LOCKED</span></div>
+              <div class="mono" style="font-size:20px;font-weight:700;color:var(--cyan);">$0.00 <span style="font-size:11px;color:#94A3B8">UNBONDED</span></div>
             </div>
             <div style="background:#070A10;border:1px solid var(--border);border-radius:10px;padding:14px;">
               <div class="kpi-label">Verified Base L2 On-Chain Wallet</div>
@@ -340,8 +340,8 @@
     }
 
     // Championship Ticket
-    let score = 3842.10, alpha = 14892.40;
-    const alphaHistory = [11200, 11850, 12100, 12640, 13010, 13490, 13920, 14280, 14510, 14892.4];
+    let score = 0, alpha = 0;
+    const alphaHistory = [0, 0];
 
     function recalcTicket() {
       const [pair, spStr] = document.getElementById('ticketPair').value.split('|');
