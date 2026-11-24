@@ -79,7 +79,7 @@ export function OodaAutonomousSuite({
 
   const currentStage = oodaState?.currentStage || 'OBSERVE';
   const pulseNumber = oodaState?.pulseCounter || 14;
-  const totalAlpha = oodaState?.totalProactiveAlphaUsd || 1420.80;
+  const totalAlpha = oodaState?.totalProactiveAlphaUsd || 0.00;
   const marketCtx = oodaState?.marketContext || {};
   const sentiment = marketCtx.social_sentiment || {};
 

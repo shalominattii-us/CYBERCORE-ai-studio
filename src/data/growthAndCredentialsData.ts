@@ -7,7 +7,7 @@ import {
 export const INITIAL_GROWTH_PLAN: PortfolioGrowthPlan = {
   id: 'PLAN-SOV-2026-PRIMARY',
   planName: 'Aegentix Sovereign Growth & Multi-Exchange Endowment Plan',
-  initialCapitalUsd: 48294.50,
+  initialCapitalUsd: 0.00,
   targetMilestoneUsd: 1250000.00,
   monthlyContributionUsd: 3500.00,
   projectedAprPct: 42.6,
@@ -21,7 +21,7 @@ export const INITIAL_GROWTH_PLAN: PortfolioGrowthPlan = {
     {
       id: 'MS-1',
       name: 'Phase 1: Capital Inception & Dual-Exchange Seed',
-      targetUsd: 48294.50,
+      targetUsd: 0.00,
       targetMonth: 0,
       reached: true,
       notes: 'Initial dual CEX + DEX seed capital mark-to-market. CEX $28.5k / DEX $19.7k.',

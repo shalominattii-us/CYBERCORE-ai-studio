@@ -1,0 +1,58 @@
+name: Production Smoke & Zero-Fake-Balance Gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  verify-production:
+    name: Typecheck, Build, Zero-Fake-Balance & Live Node v22 Boot Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enforce Zero-Fake-Balance Invariant
+        run: |
+          if grep -rnE "48294\.50|26102\.50|22192\.00" src/; then
+            echo "ERROR: Legacy hardcoded fake balance detected in src/!"
+            exit 1
+          fi
+          echo "PASS: Zero legacy fake balances in src/"
+
+      - name: Install dependencies
+        run: npm install --allow-git=all
+
+      - name: TypeScript typecheck (tsc --noEmit)
+        run: npm run lint
+
+      - name: Production build (Vite + esbuild)
+        run: npm run build
+
+      - name: Live Node.js v22 Production Server Boot & API Smoke Test
+        run: |
+          NODE_ENV=production PORT=3099 node server.ts > /tmp/ci_server.log 2>&1 &
+          SRV_PID=$!
+          sleep 3
+          for ep in /health /api/domain/status /api/championship/status /api/edge-worker/status /api/formal-verify/status /api/wave-surfer/status /api/eagle-shield/status /api/sovereign-os/status; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3099${ep}")
+            echo "${ep} -> HTTP ${CODE}"
+            if [ "$CODE" != "200" ]; then
+              cat /tmp/ci_server.log
+              kill $SRV_PID 2>/dev/null || true
+              exit 1
+            fi
+          done
+          kill $SRV_PID 2>/dev/null || true
+          echo "PASS: All 8 production endpoints returned HTTP 200 OK"

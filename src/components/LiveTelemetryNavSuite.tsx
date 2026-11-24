@@ -87,9 +87,9 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
   const default24HourTrends = (): Telemetry24HourTrendPoint[] => {
     const pts: Telemetry24HourTrendPoint[] = [];
     const now = Date.now();
-    const currentTotal = 48294.50;
-    const currentCex = 26102.50;
-    const currentDex = 22192.00;
+    const currentTotal = 0.00;
+    const currentCex = 0.00;
+    const currentDex = 0.00;
     const currentPnl = 1420.50;
 
     for (let h = 23; h >= 0; h--) {
@@ -401,7 +401,7 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
   const padY = 25;
 
   const points = history.length > 0 ? history : [
-    { timestamp: Date.now(), timeStr: 'Now', navUsd: 48294.5, cexUsd: 26102.5, dexUsd: 22192, ethPriceCex: 2684.5, ethPriceDex: 2662.1, spreadPct: 0.84, navDeviationPct: 0.02 }
+    { timestamp: Date.now(), timeStr: 'Now', navUsd: 0, cexUsd: 0, dexUsd: 0, ethPriceCex: 2684.5, ethPriceDex: 2662.1, spreadPct: 0.84, navDeviationPct: 0.02 }
   ];
 
   // Derive series for 60s real-time tick SVG fallback
@@ -428,7 +428,7 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
 
   const areaD = `${pathD} L ${chartWidth - padX} ${chartHeight} L ${padX} ${chartHeight} Z`;
 
-  const currentNav = telemetry?.currentNav || (history.length > 0 ? history[history.length - 1].navUsd : 48294.50);
+  const currentNav = telemetry?.currentNav || (history.length > 0 ? history[history.length - 1].navUsd : 0.00);
   const currentDeviation = telemetry?.currentDeviationPct || (history.length > 0 ? history[history.length - 1].navDeviationPct : 0.04);
   const isTriggerActive = currentDeviation >= 0.10;
 
@@ -514,8 +514,8 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
           <div className="bg-[#080D16] border border-slate-800/80 rounded-lg p-3">
             <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">CEX / DEX Balance Split</div>
             <div className="text-sm font-semibold text-slate-200 font-mono flex items-center justify-between mt-1">
-              <span className="text-cyan-300">CEX: ${(telemetry?.cexUsd || 26102.50).toLocaleString()}</span>
-              <span className="text-indigo-300">DEX: ${(telemetry?.dexUsd || 22192.00).toLocaleString()}</span>
+              <span className="text-cyan-300">CEX: ${(telemetry?.cexUsd || 0.00).toLocaleString()}</span>
+              <span className="text-indigo-300">DEX: ${(telemetry?.dexUsd || 0.00).toLocaleString()}</span>
             </div>
             <div className="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden flex">
               <div className="bg-cyan-500 h-full" style={{ width: '54%' }} />
@@ -577,7 +577,7 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
           <div>
             <span className="text-slate-400 text-[10px] uppercase font-bold block">Total Exchange Balance</span>
             <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
-              ${Number(telemetry?.currentNav ?? 48294.50).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${Number(telemetry?.currentNav ?? 0.00).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
             <span className="text-[10px] text-slate-500 block">Consolidated Venues</span>
           </div>
@@ -585,7 +585,7 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
           <div>
             <span className="text-slate-400 text-[10px] uppercase font-bold block">CEX (Binance.US)</span>
             <div className="text-base font-bold font-mono text-blue-400 mt-0.5">
-              ${Number(telemetry?.cexUsd ?? 26102.50).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${Number(telemetry?.cexUsd ?? 0.00).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
             <span className="text-[10px] text-slate-500 block">54.0% Allocation</span>
           </div>
@@ -593,7 +593,7 @@ export const LiveTelemetryNavSuite: React.FC<LiveTelemetryNavSuiteProps> = ({
           <div>
             <span className="text-slate-400 text-[10px] uppercase font-bold block">DEX (Uniswap V3)</span>
             <div className="text-base font-bold font-mono text-indigo-400 mt-0.5">
-              ${Number(telemetry?.dexUsd ?? 22192.00).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${Number(telemetry?.dexUsd ?? 0.00).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
             <span className="text-[10px] text-slate-500 block">46.0% Allocation</span>
           </div>

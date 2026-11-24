@@ -72,7 +72,7 @@ interface PortfolioGrowthPlanSuiteProps {
 }
 
 export const PortfolioGrowthPlanSuite: React.FC<PortfolioGrowthPlanSuiteProps> = ({
-  currentNetWorthUsd = 48294.50,
+  currentNetWorthUsd = 0.00,
   onNotify,
   onOpenTradingCommand,
   onOpenCyberGym
