@@ -194,6 +194,14 @@ export function installStaticApiFallback(): void {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const isApiCall = urlStr.startsWith('/api/') || urlStr.includes('/api/');
+    const isStaticGithubPages = window.location.hostname.endsWith('github.io');
+
+    if (isApiCall && isStaticGithubPages) {
+      const parsed = new URL(urlStr, window.location.origin);
+      const method = (init?.method || 'GET').toUpperCase();
+      const bodyText = typeof init?.body === 'string' ? init.body : undefined;
+      return handleStaticApi(parsed.pathname, method, bodyText);
+    }
 
     try {
       const res = await nativeFetch(input, init);
