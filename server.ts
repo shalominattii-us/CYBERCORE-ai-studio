@@ -58,6 +58,7 @@ import { aiEcosystemHubRouter } from './src/api/aiEcosystemHub.ts';
 import { waveSurferTreasuryRouter } from './src/api/waveSurferTreasury.ts';
 import { eagleShieldQuantumRouter } from './src/api/eagleShieldQuantum.ts';
 import { sovereignOsCoreRouter } from './src/api/sovereignOsCore.ts';
+import { vibeCodeLabRouter } from './src/api/vibeCodeLab.ts';
 
 dotenv.config();
 
@@ -205,6 +206,7 @@ app.use('/api/ai-hub', aiEcosystemHubRouter);
 app.use('/api/wave-surfer', waveSurferTreasuryRouter);
 app.use('/api/eagle-shield', eagleShieldQuantumRouter);
 app.use('/api/sovereign-os', sovereignOsCoreRouter);
+app.use('/api/vibe-lab', vibeCodeLabRouter);
 app.use(desktopBridgeRouter);
 
 // Standard health endpoints for Cloud Run, load balancers & Aegentix health stack

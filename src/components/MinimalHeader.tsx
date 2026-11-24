@@ -28,6 +28,7 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
   gasTankUsd,
 }) => {
   const primaryNavItems = [
+    { id: 'VIBE_CODE_LAB', label: 'Vibe Lab', tag: 'Live' },
     { id: 'COINBASE_CHAMPIONSHIP', label: 'Championship', tag: 'Rank #1' },
     { id: 'WAVE_SURFER_TREASURY', label: 'Wave Surfer', tag: 'Tier 3' },
     { id: 'EAGLE_SHIELD_QUANTUM', label: 'Eagle Shield', tag: 'US-SQTE' },
