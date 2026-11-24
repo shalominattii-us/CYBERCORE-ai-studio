@@ -18,11 +18,11 @@ export const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({
 
   // Timeframe-specific simulated curve points
   const chartPointsByTimeframe = {
-    '1H': [48120, 48150, 48190, 48160, 48210, 48240, 48294],
-    '24H': [46870, 47120, 47050, 47400, 47850, 47620, 48100, 48294],
-    '7D': [44200, 44900, 45600, 45200, 46700, 47400, 48294],
-    '30D': [39800, 41200, 42500, 44100, 43800, 46100, 48294],
-    'ALL': [31500, 36200, 41000, 44500, 45800, 47200, 48294],
+    '1H': [0, 0, 0, 0, 0, 0, 0],
+    '24H': [0, 0, 0, 0, 0, 0, 0, 0],
+    '7D': [0, 0, 0, 0, 0, 0, 0],
+    '30D': [0, 0, 0, 0, 0, 0, 0],
+    'ALL': [0, 0, 0, 0, 0, 0, 0],
   };
 
   const points = chartPointsByTimeframe[selectedTimeframe];

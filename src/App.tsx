@@ -105,11 +105,11 @@ function deduplicateById<T extends { id?: string }>(items: T[]): T[] {
 export default function App() {
   // App Core State
   const [balances, setBalances] = useState<WalletBalances>({
-    totalUsd: 48294.50,
-    cexUsd: 26102.50,
-    dexUsd: 22192.00,
-    dailyPnlUsd: 1420.80,
-    dailyPnlPct: 2.94,
+    totalUsd: 0,
+    cexUsd: 0,
+    dexUsd: 0,
+    dailyPnlUsd: 0,
+    dailyPnlPct: 0,
     holdings: [],
   });
 
