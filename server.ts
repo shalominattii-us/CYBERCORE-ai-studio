@@ -47,6 +47,13 @@ import {
   INDUSTRY_MASTERING_CONFIGS,
 } from './src/data/industryAudioProductionConfigs.ts';
 import { apexLiveApiManager } from './src/utils/apexLegendsLiveApiBridge.ts';
+import { createEdgeWorkerRouter, createChampionshipRouter } from './src/api/edgeWorker.ts';
+import { botHqRouter } from './src/api/botHq.ts';
+import { complianceChainRouter } from './src/api/complianceChain.ts';
+import { desktopBridgeRouter } from './src/api/desktopBridge.ts';
+import { mt5MobileBridgeRouter } from './src/api/mt5MobileBridge.ts';
+import { alpacaMcpBotRouter } from './src/api/alpacaMcpBot.ts';
+import { formalVerifierRouter } from './src/api/formalVerifier.ts';
 
 dotenv.config();
 
@@ -157,6 +164,40 @@ async function callProxyToSovereignCompliance(params: {
 
 const app = express();
 app.use(express.json());
+
+// Permissive CORS & Preflight for studio.aegentixcybernetics.com and Cloudflare Edge Worker
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://studio.aegentixcybernetics.com');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Edge-HMAC, X-Edge-Colo, X-Aegentix-Edge-Worker');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
+// Domain & Cloudflare Edge Routing Diagnostics
+app.get('/api/domain/status', (req, res) => {
+  res.status(200).json({
+    status: 'operational',
+    canonicalDomain: 'https://studio.aegentixcybernetics.com',
+    host: req.headers.host || 'studio.aegentixcybernetics.com',
+    edgeColo: req.headers['x-edge-colo'] || 'DIRECT',
+    edgeWorkerActive: Boolean(req.headers['x-aegentix-edge-worker']),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Mount Swarm 1, 2 & 3 Modular API Routers
+app.use('/api/edge-worker', createEdgeWorkerRouter());
+app.use('/api/championship', createChampionshipRouter());
+app.use('/api/bot-hq', botHqRouter);
+app.use('/api/compliance', complianceChainRouter);
+app.use('/api/mt5-mobile', mt5MobileBridgeRouter);
+app.use('/api/alpaca-bot', alpacaMcpBotRouter);
+app.use('/api/formal-verify', formalVerifierRouter);
+app.use(desktopBridgeRouter);
 
 // Standard health endpoints for Cloud Run, load balancers & Aegentix health stack
 app.get(['/health', '/healthz', '/api/health', '/api/healthz', '/api/status'], (_req, res) => {

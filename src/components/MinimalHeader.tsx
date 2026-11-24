@@ -28,55 +28,54 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
   gasTankUsd,
 }) => {
   const primaryNavItems = [
-    { id: 'AEGENTIS_OS', label: '🎛️ Full Cyberdeck', tag: 'All 34 Mods' },
-    { id: 'XAMAN_REVENUE_BRIDGE', label: '⚡ Xaman (rwB7)', tag: 'XRPL DEX' },
-    { id: 'SOVEREIGN_ORIGIN_NODE', label: 'Origin Node', tag: 'Primary Root' },
-    { id: 'ZERO_CAP_FLYWHEEL', label: 'Gas Reserves', tag: `$${gasTankUsd.toFixed(0)}` },
-    { id: 'NEXUS_REGISTRY', label: 'Skill Matrix', tag: '2,710' },
-    { id: 'ANTI_TRAFFICKING_SENTINEL', label: 'Anti-Trafficking', tag: 'Armed' },
-    { id: 'TRADING_COMMAND', label: 'Execution', tag: 'Live' },
-    { id: 'PORTAL_LANDING', label: 'Overview', tag: null },
+    { id: 'COINBASE_CHAMPIONSHIP', label: 'Championship', tag: 'Rank #1' },
+    { id: 'BOT_HQ', label: 'Bot HQ', tag: '4 Agents' },
+    { id: 'CLOUDFLARE_EDGE_WORKER', label: 'Edge Worker', tag: 'Auto-Win' },
+    { id: 'COMPLIANCE_AUDIT_CHAIN', label: 'Audit Chain', tag: 'HMAC' },
+    { id: 'MT5_MOBILE_EA', label: 'MT5 Mobile', tag: 'No-VPS' },
+    { id: 'ALPACA_MCP_BOT', label: 'Alpaca MCP', tag: 'Paper' },
+    { id: 'FORMAL_VERIFICATION', label: 'Lean 4 Proof', tag: 'Gate' },
+    { id: 'JARVIS_BUILDER', label: 'Jarvis Dial Out', tag: ':8081' },
+    { id: 'DEVICE_SANDBOX_MAPPING', label: 'Desktop Sync', tag: 'Bridge' },
   ];
 
   return (
-    <header className="border-b border-white/[0.06] bg-[#090A0F]/80 backdrop-blur-xl sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+    <header className="border-b border-white/[0.06] bg-[#080B10]/95 backdrop-blur-xl sticky top-0 z-50">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Brand Anchor */}
         <div 
-          onClick={() => onSelectTab('SOVEREIGN_ORIGIN_NODE')}
-          className="flex items-center gap-3 cursor-pointer select-none group"
+          onClick={() => onSelectTab('COINBASE_CHAMPIONSHIP')}
+          className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
         >
-          <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center group-hover:border-white/20 transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-[#0D121B] border border-white/[0.08] flex items-center justify-center group-hover:border-emerald-500/40 transition-colors">
             <Shield className="w-4 h-4 text-emerald-400" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm tracking-tight text-white">AEGENTIX</span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                Sovereign Core
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm tracking-tight text-white">AEGENTIX</span>
+            <span className="hidden xl:inline-block text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+              Championship Desk
+            </span>
           </div>
         </div>
 
         {/* Clean Center Navigation */}
-        <nav className="hidden md:flex items-center gap-1 bg-white/[0.02] border border-white/[0.06] p-1 rounded-xl">
+        <nav className="hidden md:flex items-center gap-1 bg-[#0D121B] border border-white/[0.06] p-1 rounded-xl overflow-x-auto max-w-full">
           {primaryNavItems.map((item) => {
             const isActive = currentTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-white/[0.08] text-white shadow-sm border border-white/[0.08]'
+                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent'
                 }`}
               >
                 <span>{item.label}</span>
                 {item.tag && (
                   <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
-                    isActive ? 'bg-white/10 text-white' : 'bg-white/[0.04] text-zinc-400'
+                    isActive ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/[0.04] text-zinc-500'
                   }`}>
                     {item.tag}
                   </span>
@@ -87,31 +86,26 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
         </nav>
 
         {/* Right Status Indicator */}
-        <div className="flex items-center gap-3 font-mono text-xs">
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.02] border border-white/[0.06] text-zinc-400">
+        <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+          <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0D121B] border border-white/[0.06] text-zinc-400 tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Gas: {gasPriceGwei} Gwei</span>
+            <span>Base {gasPriceGwei} Gwei</span>
           </div>
 
-          <a
-            href="http://localhost:3001/dashboard/"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition-all cursor-pointer"
+          <button
+            onClick={() => onSelectTab('AEGENTIS_OS')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#0D121B] text-zinc-300 border border-white/[0.08] hover:border-white/20 transition-all cursor-pointer"
           >
-            <span>Qualixar OS</span>
-            <ExternalLink className="w-3 h-3 opacity-70" />
-          </a>
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Modules</span>
+          </button>
 
-          <a
-            href="http://localhost:8890/ui"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer"
+          <button
+            onClick={() => onSelectTab('PORTAL_LANDING')}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#0D121B] text-zinc-400 border border-white/[0.08] hover:text-white hover:border-white/20 transition-all cursor-pointer"
           >
-            <span>Bastet UI</span>
-            <ExternalLink className="w-3 h-3 opacity-70" />
-          </a>
+            <span>Portal</span>
+          </button>
         </div>
       </div>
     </header>

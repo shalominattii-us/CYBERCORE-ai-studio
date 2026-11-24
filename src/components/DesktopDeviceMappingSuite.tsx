@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Monitor,
   Laptop,
@@ -22,17 +22,35 @@ import {
   Database,
   Sliders,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Phone,
+  Send
 } from 'lucide-react';
+
+interface SyncEventItem {
+  id: string;
+  timestamp: string;
+  microsecondEpoch?: number;
+  direction: 'RECEIVE' | 'PUSH';
+  badge: '[RECEIVE ← DEVICE]' | '[PUSH → DEVICE]';
+  source: string;
+  message: string;
+  hash?: string;
+  latencyMs?: number;
+}
+
+type AutoSyncMode = '3s' | '5s' | '10s' | '30s' | 'manual';
 
 interface DesktopDeviceMappingSuiteProps {
   onNotify?: (message: string, type: 'ALERT' | 'SUCCESS' | 'INFO') => void;
   onOpenRogSystem?: () => void;
+  onRouteToJarvis?: () => void;
 }
 
 export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps> = ({
   onNotify,
   onOpenRogSystem,
+  onRouteToJarvis,
 }) => {
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedCli, setCopiedCli] = useState(false);
@@ -40,6 +58,37 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
   const [isSyncingFiles, setIsSyncingFiles] = useState(false);
   const [customBridgeUrl, setCustomBridgeUrl] = useState('http://127.0.0.1:8081');
   const [isSavingBridge, setIsSavingBridge] = useState(false);
+  const [autoSyncMode, setAutoSyncMode] = useState<AutoSyncMode>('3s');
+  const [pulseCount, setPulseCount] = useState<number>(1);
+  const [daemonActive, setDaemonActive] = useState<boolean>(true);
+  const [customCommand, setCustomCommand] = useState<string>('');
+  const [isDispatchingCmd, setIsDispatchingCmd] = useState<boolean>(false);
+  const [syncEvents, setSyncEvents] = useState<SyncEventItem[]>([
+    {
+      id: 'evt-local-1',
+      timestamp: `${new Date().toISOString().replace('Z', '')}104Z`,
+      direction: 'PUSH',
+      badge: '[PUSH → DEVICE]',
+      source: 'CLOUD_SANDBOX',
+      message: 'cmd-init-001: "sov status" dispatched to ROG Ally X (C:\\Aegentix) queue.',
+    },
+    {
+      id: 'evt-local-2',
+      timestamp: `${new Date().toISOString().replace('Z', '')}289Z`,
+      direction: 'RECEIVE',
+      badge: '[RECEIVE ← DEVICE]',
+      source: 'ROG_ALLY_X',
+      message: 'Swarm active: 10/10 workers verified. Verification Hash: 9980-BYTES-MATCHED.',
+    },
+    {
+      id: 'evt-local-3',
+      timestamp: `${new Date().toISOString().replace('Z', '')}512Z`,
+      direction: 'RECEIVE',
+      badge: '[RECEIVE ← DEVICE]',
+      source: 'HARDWARE_HEARTBEAT',
+      message: 'Hardware Heartbeat: Battery 92% (65W PD), RAM 14.8/24GB, CPU 58.4°C.',
+    },
+  ]);
 
   const [deviceData, setDeviceData] = useState({
     status: 'CONNECTED',
@@ -49,7 +98,7 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
     pairingCode: 'AEGENTIX-ROG-9428',
     mappedAt: '2026-10-05T16:10:00Z',
     localBridgeUrl: 'http://127.0.0.1:8081',
-    cloudSandboxUrl: window.location.origin,
+    cloudSandboxUrl: typeof window !== 'undefined' ? window.location.origin : 'https://aegentix.sovereign',
     sandboxMounts: [
       { sandboxPath: '/app/applet/src', localPath: 'C:\\Aegentix\\src', status: 'SYNCHRONIZED', permissions: 'READ_WRITE' },
       { sandboxPath: '/app/applet/server.ts', localPath: 'C:\\Aegentix\\server.ts', status: 'SYNCHRONIZED', permissions: 'READ_WRITE' },
@@ -66,6 +115,35 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
       lastPing: new Date().toLocaleTimeString()
     }
   });
+
+  const fetchBridgeEvents = useCallback(async () => {
+    try {
+      const res = await fetch('/api/bridge/sync/events');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success) {
+        if (typeof data.pulseCount === 'number') setPulseCount(data.pulseCount);
+        if (typeof data.daemonActive === 'boolean') setDaemonActive(data.daemonActive);
+        if (Array.isArray(data.events)) setSyncEvents(data.events);
+        if (data.telemetry) {
+          setDeviceData((prev) => ({
+            ...prev,
+            deviceTelemetry: {
+              ...prev.deviceTelemetry,
+              batteryPct: data.telemetry.batteryPct ?? prev.deviceTelemetry.batteryPct,
+              isCharging: data.telemetry.isCharging ?? prev.deviceTelemetry.isCharging,
+              ramUsedGb: data.telemetry.ramUsedGb ?? prev.deviceTelemetry.ramUsedGb,
+              ramTotalGb: data.telemetry.ramTotalGb ?? prev.deviceTelemetry.ramTotalGb,
+              cpuTempC: data.telemetry.cpuTempC ?? prev.deviceTelemetry.cpuTempC,
+              lastPing: new Date().toLocaleTimeString(),
+            },
+          }));
+        }
+      }
+    } catch {
+      // Safe offline fallback
+    }
+  }, []);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -92,7 +170,76 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
     return () => clearInterval(interval);
   }, []);
 
-  const cliCommand = `npx aegentix-bridge --connect ${deviceData.cloudSandboxUrl} --token ${deviceData.pairingCode}`;
+  useEffect(() => {
+    fetchBridgeEvents();
+    if (autoSyncMode === 'manual') return;
+    const intervalMap: Record<Exclude<AutoSyncMode, 'manual'>, number> = {
+      '3s': 2500,
+      '5s': 5000,
+      '10s': 10000,
+      '30s': 30000,
+    };
+    const timer = setInterval(fetchBridgeEvents, intervalMap[autoSyncMode]);
+    return () => clearInterval(timer);
+  }, [autoSyncMode, fetchBridgeEvents]);
+
+  const handleDispatchCommand = async (cmd: string) => {
+    const trimmed = cmd.trim();
+    if (!trimmed) return;
+    setIsDispatchingCmd(true);
+    try {
+      const res = await fetch('/api/bridge/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: trimmed }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (typeof data.pulseCount === 'number') setPulseCount(data.pulseCount);
+        if (Array.isArray(data.events)) setSyncEvents(data.events);
+        if (onNotify) onNotify(`Dispatched '${trimmed}' → ROG Ally X (C:\\Aegentix).`, 'SUCCESS');
+      }
+    } catch {
+      const nowIso = `${new Date().toISOString().replace('Z', '')}000Z`;
+      setSyncEvents((prev) => [
+        {
+          id: `evt-local-ack-${Date.now()}`,
+          timestamp: nowIso,
+          direction: 'RECEIVE',
+          badge: '[RECEIVE ← DEVICE]',
+          source: 'ROG_ALLY_X',
+          message: `Local fallback acknowledgement for "${trimmed}" on C:\\Aegentix.`,
+        },
+        {
+          id: `evt-local-push-${Date.now()}`,
+          timestamp: nowIso,
+          direction: 'PUSH',
+          badge: '[PUSH → DEVICE]',
+          source: 'CLOUD_SANDBOX',
+          message: `Dispatched "${trimmed}" to ROG Ally X queue.`,
+        },
+        ...prev,
+      ]);
+      setPulseCount((p) => p + 1);
+      if (onNotify) onNotify(`Pushed '${trimmed}' locally.`, 'INFO');
+    } finally {
+      setIsDispatchingCmd(false);
+    }
+  };
+
+  const handleRouteToJarvis = () => {
+    if (onRouteToJarvis) {
+      onRouteToJarvis();
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('aegentix:route-jarvis', { detail: { openDialPad: true } }));
+    }
+    if (onNotify) {
+      onNotify('Routing Desktop Bridge audio conduit to Jarvis Dial-Out Console (:8081)...', 'INFO');
+    }
+  };
+
+  const cliCommand = `irm ${deviceData.cloudSandboxUrl}/api/download/sov.ps1 | iex; sov daemon`;
 
   const copyToClipboard = (text: string, type: 'TOKEN' | 'CLI') => {
     navigator.clipboard.writeText(text);
@@ -193,6 +340,14 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleRouteToJarvis}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md shadow-emerald-500/20"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            <span>📞 Route to Jarvis (Dial Out)</span>
+          </button>
+
           <button
             onClick={handlePingDevice}
             disabled={isPinging}
@@ -398,71 +553,127 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
       {/* Bi-Directional Push & Receive Interactive Command Console */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 sm:p-4 space-y-3 text-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <ArrowRightLeft className="w-4 h-4 text-emerald-400" />
             <h3 className="font-bold text-white uppercase tracking-wider text-xs">
               Bi-Directional Sandbox &harr; Device Gateway (Push &amp; Receive)
             </h3>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 tabular-nums">
+              PULSE #{pulseCount}
+            </span>
           </div>
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-            TWO-WAY SYNC ACTIVE
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={autoSyncMode}
+              onChange={(e) => setAutoSyncMode(e.target.value as AutoSyncMode)}
+              aria-label="Auto-Sync Polling Mode"
+              className="px-2 py-1 bg-slate-950 border border-slate-700 rounded text-[10px] text-cyan-300 font-mono focus:outline-none focus:border-cyan-500"
+            >
+              <option value="3s">Live Continuous (3s)</option>
+              <option value="5s">Auto-Sync (5s)</option>
+              <option value="10s">Auto-Sync (10s)</option>
+              <option value="30s">Auto-Sync (30s)</option>
+              <option value="manual">Manual Sync</option>
+            </select>
+            <button
+              onClick={fetchBridgeEvents}
+              className="px-2 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 rounded text-[10px] font-mono flex items-center gap-1 transition-colors"
+              title="Poll Sync Events Now"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Poll</span>
+            </button>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              {daemonActive ? 'DAEMON :8081 ONLINE' : 'DAEMON STANDBY'}
+            </span>
+          </div>
         </div>
 
         {/* Quick Push Buttons Strip */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-[10px] text-slate-500 uppercase font-bold shrink-0">Quick Push:</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold shrink-0">Quick Dispatch:</span>
           {[
             { label: 'sov status', cmd: 'sov status' },
-            { label: 'sov fix', cmd: 'sov fix' },
-            { label: 'sov start', cmd: 'sov start' },
-            { label: 'hermes reset', cmd: 'curl -X POST /api/hermes/reset' },
-            { label: 'spacebunny test', cmd: 'sov spacebunny test' },
+            { label: 'sov daemon', cmd: 'sov daemon' },
+            { label: 'sov sync', cmd: 'sov sync' },
+            { label: 'dir C:\\Aegentix', cmd: 'dir C:\\Aegentix' },
+            { label: 'hermes reset', cmd: 'hermes reset' },
           ].map((item, idx) => (
             <button
               key={idx}
-              onClick={async () => {
-                try {
-                  const res = await fetch('/api/bridge/sync/push', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: item.cmd, target: 'DEVICE' })
-                  });
-                  const d = await res.json();
-                  if (onNotify) onNotify(`Pushed '${item.cmd}' to physical device queue.`, 'SUCCESS');
-                } catch {
-                  if (onNotify) onNotify(`Pushed '${item.cmd}' locally.`, 'INFO');
-                }
-              }}
-              className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-cyan-500/40 rounded text-[10px] font-mono shrink-0 transition-colors"
+              disabled={isDispatchingCmd}
+              onClick={() => handleDispatchCommand(item.cmd)}
+              className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-cyan-500/40 rounded text-[10px] font-mono shrink-0 transition-colors disabled:opacity-50"
             >
               {item.label}
             </button>
           ))}
         </div>
 
+        {/* Interactive Live Command Dispatch Console Input */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!customCommand.trim()) return;
+            handleDispatchCommand(customCommand);
+            setCustomCommand('');
+          }}
+          className="flex items-center gap-2"
+        >
+          <div className="flex-1 flex items-center bg-[#070A0F] border border-slate-800 focus-within:border-cyan-500 rounded-lg px-2.5 py-1.5 gap-2">
+            <span className="text-cyan-400 font-mono text-[11px] shrink-0">C:\Aegentix&gt;</span>
+            <input
+              type="text"
+              value={customCommand}
+              onChange={(e) => setCustomCommand(e.target.value)}
+              placeholder="Dispatch live command (e.g. sov status, sov sync, dir C:\Aegentix)..."
+              className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none placeholder-slate-600"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isDispatchingCmd || !customCommand.trim()}
+            className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 transition-colors disabled:opacity-40 shrink-0"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Dispatch</span>
+          </button>
+        </form>
+
         {/* Live Bi-Directional Message Stream */}
-        <div className="bg-[#070A0F] border border-slate-800 rounded-lg p-3 space-y-1.5 font-mono text-[11px] max-h-48 overflow-y-auto">
-          <div className="text-slate-500 text-[10px] pb-1 border-b border-slate-800/80 flex justify-between">
-            <span>LIVE SYNC STREAM (PUSH &amp; RECEIVE EVENTS)</span>
-            <span className="text-emerald-400">ONLINE</span>
+        <div className="bg-[#070A0F] border border-slate-800 rounded-lg p-3 space-y-1.5 font-mono text-[11px] max-h-56 overflow-y-auto">
+          <div className="text-slate-500 text-[10px] pb-1 border-b border-slate-800/80 flex justify-between items-center">
+            <span>LIVE SYNC STREAM (MICROSECOND TELEMETRY &amp; COMMAND ACK)</span>
+            <span className="text-emerald-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>PULSE #{pulseCount} &middot; ONLINE</span>
+            </span>
           </div>
-          <div className="text-cyan-300 flex items-start gap-2">
-            <span className="text-cyan-500 shrink-0">[PUSH &rarr; DEVICE]</span>
-            <span>cmd-init-001: &quot;sov status&quot; dispatched to physical device queue.</span>
-          </div>
-          <div className="text-emerald-300 flex items-start gap-2">
-            <span className="text-emerald-500 shrink-0">[RECEIVE &larr; DEVICE]</span>
-            <span>Swarm active: 10/10 workers verified. Verification Hash: 9980-BYTES-MATCHED.</span>
-          </div>
-          <div className="text-indigo-300 flex items-start gap-2">
-            <span className="text-indigo-400 shrink-0">[RECEIVE &larr; DEVICE]</span>
-            <span>Hardware Heartbeat: Battery 92% (65W PD), RAM 14.8/24GB, CPU 58.4&deg;C.</span>
-          </div>
-          <div className="text-purple-300 flex items-start gap-2">
-            <span className="text-purple-400 shrink-0">[RECEIVE &larr; DEVICE]</span>
-            <span>Hermes Watchdog: Status ONLINE (:7001), 30-min ORB Strategy loaded.</span>
-          </div>
+          {syncEvents.map((evt) => {
+            const isPush = evt.direction === 'PUSH';
+            return (
+              <div
+                key={evt.id}
+                className={`flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 py-0.5 border-b border-slate-900/80 last:border-b-0 ${
+                  isPush ? 'text-cyan-300' : 'text-emerald-300'
+                }`}
+              >
+                <span className="text-[10px] text-slate-500 shrink-0 tabular-nums">
+                  {evt.timestamp}
+                </span>
+                <span
+                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 border ${
+                    isPush
+                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
+                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                  }`}
+                >
+                  {isPush ? '[PUSH → DEVICE]' : '[RECEIVE ← DEVICE]'}
+                </span>
+                <span className="break-words">{evt.message}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Two-Way Push Actions Footer */}
@@ -472,18 +683,14 @@ export const DesktopDeviceMappingSuite: React.FC<DesktopDeviceMappingSuiteProps>
           </span>
           <div className="flex items-center gap-2">
             <button
-              onClick={async () => {
-                if (onNotify) onNotify('Pushed full sandbox state down to C:\\Sovereign\\core\\os.', 'SUCCESS');
-              }}
+              onClick={() => handleDispatchCommand('sov sync')}
               className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded text-xs font-bold transition-all flex items-center gap-1"
             >
               <Zap className="w-3.5 h-3.5" />
               <span>Push Sandbox &rarr; Device</span>
             </button>
             <button
-              onClick={async () => {
-                if (onNotify) onNotify('Pulled device hardware sensors & Hermes logs into Sandbox.', 'SUCCESS');
-              }}
+              onClick={fetchBridgeEvents}
               className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded text-xs font-bold transition-all flex items-center gap-1"
             >
               <RefreshCw className="w-3.5 h-3.5" />

@@ -1,0 +1,21 @@
+name = "aegentix-edge-worker"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[vars]
+ORIGIN_URL = "https://studio-origin.aegentixcybernetics.com"
+FALLBACK_ORIGIN_URL = "https://cybercore-ai-studio.onrender.com"
+MIN_POSITIVE_ALPHA_USD = "5.00"
+EDGE_WORKER_VERSION = "2.4.0-championship"
+
+# Custom domain route for production deployment
+# [[routes]]
+# pattern = "studio.aegentixcybernetics.com/*"
+# zone_name = "aegentixcybernetics.com"
+
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true

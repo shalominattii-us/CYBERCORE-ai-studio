@@ -59,6 +59,13 @@ import { ZeroCapitalFlywheelSuite } from './components/ZeroCapitalFlywheelSuite'
 import { SovereignOriginNodeSuite } from './components/SovereignOriginNodeSuite';
 import { AntiTraffickingSentinelSuite } from './components/AntiTraffickingSentinelSuite';
 import { XamanRevenueBridgeView } from './components/XamanRevenueBridgeView';
+import { CoinbaseChampionshipSuite } from './components/CoinbaseChampionshipSuite';
+import { CloudflareEdgeWorkerSuite } from './components/CloudflareEdgeWorkerSuite';
+import { BotHqWarRoom } from './components/BotHqWarRoom';
+import { ComplianceAuditViewer } from './components/ComplianceAuditViewer';
+import { Mt5MobileEaSuite } from './components/Mt5MobileEaSuite';
+import { AlpacaMcpBotSuite } from './components/AlpacaMcpBotSuite';
+import { FormalVerificationSuite } from './components/FormalVerificationSuite';
 import { 
   WalletBalances, 
   MarketAsset, 
@@ -291,10 +298,16 @@ export default function App() {
         if (fromStored) return fromStored;
       }
     } catch {}
-    return 'PORTAL_LANDING';
+    return 'COINBASE_CHAMPIONSHIP';
   };
 
-  const [centerTab, setCenterTabState] = useState<'PORTAL_LANDING' | 'JARVIS_BUILDER' | 'LIVE_TELEMETRY' | 'AEGENTIS_OS' | 'HERDR' | 'ROG_CREATOR_SYSTEM' | 'DEVICE_SANDBOX_MAPPING' | 'CYBERNETICS' | 'AEGIS_CIPHER' | 'ENDPOINT_SECURITY' | 'OODA_LOOP' | 'TOP_SIGNALS' | 'SYMPHONY' | 'AGENT_MESH' | 'AUTOHEDGE' | 'RISK_DASHBOARD' | 'GOOGLE_DRIVE' | 'GMAIL' | 'HEATMAP' | 'MOLTBOOK' | 'RESEARCHER' | 'META_COGNITIVE' | 'SPACE_BUNNY_ALPHA' | 'ALL_FEEDS' | 'LEDGER' | 'HALO_CE_VISOR' | 'USER_PROFILE_MAP' | 'AGENTS_OF_CHAOS' | 'SOVEREIGN_COMMAND' | 'FAA_SOV_LICENSE' | 'SOVEREIGN_PORTAL' | 'OMNICYBERDEX' | 'HEALTHCARE_NET' | 'FEDERAL_CRYPTO' | 'PINNACLE_DERIVATIVES' | 'TRADING_COMMAND' | 'PORTFOLIO_GROWTH_PLAN' | 'DAG_FEDERAL_NODE_STATUS' | 'GOV_OPPORTUNITIES' | 'AGENTIC_AMERICA' | 'CYBERGYM_PROGRESSION' | 'GITHUB_FORGE' | 'KOLIBRI_PLATFORM' | 'NEXUS_REGISTRY' | 'ZERO_CAP_FLYWHEEL' | 'SOVEREIGN_ORIGIN_NODE' | 'ANTI_TRAFFICKING_SENTINEL' | 'XAMAN_REVENUE_BRIDGE'>(getInitialTab);
+  const [centerTab, setCenterTabState] = useState<'COINBASE_CHAMPIONSHIP' | 'BOT_HQ' | 'CLOUDFLARE_EDGE_WORKER' | 'COMPLIANCE_AUDIT_CHAIN' | 'MT5_MOBILE_EA' | 'ALPACA_MCP_BOT' | 'FORMAL_VERIFICATION' | 'PORTAL_LANDING' | 'JARVIS_BUILDER' | 'LIVE_TELEMETRY' | 'AEGENTIS_OS' | 'HERDR' | 'ROG_CREATOR_SYSTEM' | 'DEVICE_SANDBOX_MAPPING' | 'CYBERNETICS' | 'AEGIS_CIPHER' | 'ENDPOINT_SECURITY' | 'OODA_LOOP' | 'TOP_SIGNALS' | 'SYMPHONY' | 'AGENT_MESH' | 'AUTOHEDGE' | 'RISK_DASHBOARD' | 'GOOGLE_DRIVE' | 'GMAIL' | 'HEATMAP' | 'MOLTBOOK' | 'RESEARCHER' | 'META_COGNITIVE' | 'SPACE_BUNNY_ALPHA' | 'ALL_FEEDS' | 'LEDGER' | 'HALO_CE_VISOR' | 'USER_PROFILE_MAP' | 'AGENTS_OF_CHAOS' | 'SOVEREIGN_COMMAND' | 'FAA_SOV_LICENSE' | 'SOVEREIGN_PORTAL' | 'OMNICYBERDEX' | 'HEALTHCARE_NET' | 'FEDERAL_CRYPTO' | 'PINNACLE_DERIVATIVES' | 'TRADING_COMMAND' | 'PORTFOLIO_GROWTH_PLAN' | 'DAG_FEDERAL_NODE_STATUS' | 'GOV_OPPORTUNITIES' | 'AGENTIC_AMERICA' | 'CYBERGYM_PROGRESSION' | 'GITHUB_FORGE' | 'KOLIBRI_PLATFORM' | 'NEXUS_REGISTRY' | 'ZERO_CAP_FLYWHEEL' | 'SOVEREIGN_ORIGIN_NODE' | 'ANTI_TRAFFICKING_SENTINEL' | 'XAMAN_REVENUE_BRIDGE'>(getInitialTab);
+
+  useEffect(() => {
+    const onRouteJarvis = () => setCenterTab('JARVIS_BUILDER');
+    window.addEventListener('aegentix:route-jarvis', onRouteJarvis);
+    return () => window.removeEventListener('aegentix:route-jarvis', onRouteJarvis);
+  }, []);
 
   const setCenterTab = (tab: any) => {
     setCenterTabState(tab);
@@ -663,7 +676,27 @@ export default function App() {
     setPendingHardwareTrade(null);
   };
 
-  const isOutwardPortalMode = ['PORTAL_LANDING', 'HEALTHCARE_NET', 'PINNACLE_DERIVATIVES', 'JARVIS_BUILDER', 'TRADING_COMMAND', 'LEDGER', 'NEXUS_REGISTRY', 'ZERO_CAP_FLYWHEEL', 'SOVEREIGN_ORIGIN_NODE', 'ANTI_TRAFFICKING_SENTINEL', 'XAMAN_REVENUE_BRIDGE'].includes(centerTab);
+  const isOutwardPortalMode = [
+    'COINBASE_CHAMPIONSHIP',
+    'BOT_HQ',
+    'CLOUDFLARE_EDGE_WORKER',
+    'COMPLIANCE_AUDIT_CHAIN',
+    'MT5_MOBILE_EA',
+    'ALPACA_MCP_BOT',
+    'FORMAL_VERIFICATION',
+    'DEVICE_SANDBOX_MAPPING',
+    'PORTAL_LANDING',
+    'HEALTHCARE_NET',
+    'PINNACLE_DERIVATIVES',
+    'JARVIS_BUILDER',
+    'TRADING_COMMAND',
+    'LEDGER',
+    'NEXUS_REGISTRY',
+    'ZERO_CAP_FLYWHEEL',
+    'SOVEREIGN_ORIGIN_NODE',
+    'ANTI_TRAFFICKING_SENTINEL',
+    'XAMAN_REVENUE_BRIDGE',
+  ].includes(centerTab);
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#080B10] text-slate-200 flex flex-col font-mono selection:bg-cyan-500/30 selection:text-cyan-200">
@@ -822,6 +855,44 @@ export default function App() {
                 onNotify={(msg, type) => setAlertBanner({ message: msg, type })}
                 onBackToPortal={() => setCenterTab('PORTAL_LANDING')}
               />
+            )}
+
+            {/* TAB CONTENT: Coinbase Agentic Trading Championship Desk */}
+            {centerTab === 'COINBASE_CHAMPIONSHIP' && (
+              <CoinbaseChampionshipSuite
+                onOpenBotHq={() => setCenterTab('BOT_HQ')}
+                botHqSlot={<BotHqWarRoom />}
+              />
+            )}
+
+            {/* TAB CONTENT: Multi-Agent Bot-HQ War Room */}
+            {centerTab === 'BOT_HQ' && (
+              <BotHqWarRoom />
+            )}
+
+            {/* TAB CONTENT: Cloudflare Edge Worker (Autonomous Positive-Alpha) */}
+            {centerTab === 'CLOUDFLARE_EDGE_WORKER' && (
+              <CloudflareEdgeWorkerSuite />
+            )}
+
+            {/* TAB CONTENT: Cryptographic Compliance Audit Hash Chain */}
+            {centerTab === 'COMPLIANCE_AUDIT_CHAIN' && (
+              <ComplianceAuditViewer />
+            )}
+
+            {/* TAB CONTENT: MT4/MT5 Mobile EA & Indicator Runtime (No-VPS Android Winlator) */}
+            {centerTab === 'MT5_MOBILE_EA' && (
+              <Mt5MobileEaSuite />
+            )}
+
+            {/* TAB CONTENT: Claude + Alpaca MCP Paper Trading Bot */}
+            {centerTab === 'ALPACA_MCP_BOT' && (
+              <AlpacaMcpBotSuite />
+            )}
+
+            {/* TAB CONTENT: AlphaProof Code Formal Verification Gatekeeper (Lean 4) */}
+            {centerTab === 'FORMAL_VERIFICATION' && (
+              <FormalVerificationSuite />
             )}
 
             {/* TAB CONTENT: Jarvis App Studio (Visual Workflow Builder) */}

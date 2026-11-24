@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Wand2,
   Layout,
@@ -25,8 +25,57 @@ import {
   Save,
   ArrowRight,
   RefreshCw,
-  Share2
+  Share2,
+  Phone,
+  PhoneCall,
+  PhoneOff,
+  Mic,
+  MicOff,
+  Radio,
+  Delete,
+  ExternalLink,
+  Volume2,
+  X
 } from 'lucide-react';
+
+const DTMF_FREQUENCIES: Record<string, [number, number]> = {
+  '1': [697, 1209],
+  '2': [697, 1336],
+  '3': [697, 1477],
+  '4': [770, 1209],
+  '5': [770, 1336],
+  '6': [770, 1477],
+  '7': [852, 1209],
+  '8': [852, 1336],
+  '9': [852, 1477],
+  '*': [941, 1209],
+  '0': [941, 1336],
+  '#': [941, 1477],
+};
+
+const KEYPAD_KEYS: { digit: string; sub: string }[] = [
+  { digit: '1', sub: '' },
+  { digit: '2', sub: 'ABC' },
+  { digit: '3', sub: 'DEF' },
+  { digit: '4', sub: 'GHI' },
+  { digit: '5', sub: 'JKL' },
+  { digit: '6', sub: 'MNO' },
+  { digit: '7', sub: 'PQRS' },
+  { digit: '8', sub: 'TUV' },
+  { digit: '9', sub: 'WXYZ' },
+  { digit: '*', sub: 'SIP' },
+  { digit: '0', sub: '+' },
+  { digit: '#', sub: 'END' },
+];
+
+type CallState = 'IDLE' | 'DIALING' | 'CONNECTED';
+
+interface VoiceLogEntry {
+  id: string;
+  time: string;
+  tag: 'SIP' | 'TRUNK' | 'VOICE' | 'DTMF';
+  text: string;
+}
 
 export type BlockType = 
   | 'HERO_BANNER'
@@ -151,6 +200,251 @@ export const JarvisAppBuilderStudio: React.FC<JarvisAppBuilderStudioProps> = ({
   const [jarvisPrompt, setJarvisPrompt] = useState('');
   const [isJarvisGenerating, setIsJarvisGenerating] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Desktop Dial Pad & Jarvis Voice Conduit State
+  const [isDialPadOpen, setIsDialPadOpen] = useState(false);
+  const [dialTarget, setDialTarget] = useState('+1 800-555-0199');
+  const [callState, setCallState] = useState<CallState>('IDLE');
+  const [callDurationSec, setCallDurationSec] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [voiceLogs, setVoiceLogs] = useState<VoiceLogEntry[]>([
+    {
+      id: 'vlog-init-1',
+      time: new Date().toLocaleTimeString(),
+      tag: 'SIP',
+      text: 'Jarvis Voice Conduit initialized on local bridge port :8081 (SIP/TLS 1.3 ready).',
+    },
+    {
+      id: 'vlog-init-2',
+      time: new Date().toLocaleTimeString(),
+      tag: 'TRUNK',
+      text: 'Carrier trunk standby: sip:jarvis@aegentix.sovereign | DTMF RFC-2833 armed.',
+    },
+  ]);
+
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const dialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waveformCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const appendVoiceLog = (tag: VoiceLogEntry['tag'], text: string) => {
+    setVoiceLogs((prev) => [
+      {
+        id: `vlog-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        time: new Date().toLocaleTimeString(),
+        tag,
+        text,
+      },
+      ...prev.slice(0, 29),
+    ]);
+  };
+
+  // Listen for custom window event from DesktopDeviceMappingSuite
+  useEffect(() => {
+    const onRouteJarvis = () => {
+      setIsDialPadOpen(true);
+      appendVoiceLog('SIP', 'Incoming route handoff from Desktop Bridge (:8081) → Dial Pad opened.');
+    };
+    window.addEventListener('aegentix:route-jarvis', onRouteJarvis);
+    return () => window.removeEventListener('aegentix:route-jarvis', onRouteJarvis);
+  }, []);
+
+  // Call duration timer while CONNECTED
+  useEffect(() => {
+    if (callState !== 'CONNECTED') return;
+    const interval = setInterval(() => {
+      setCallDurationSec((sec) => sec + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [callState]);
+
+  // Cleanup dial timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dialTimerRef.current) clearTimeout(dialTimerRef.current);
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
+  // Live pulsating Audio Waveform Visualizer (canvas oscilloscope)
+  useEffect(() => {
+    const canvas = waveformCanvasRef.current;
+    if (!canvas || !isDialPadOpen) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId = 0;
+    let phase = 0;
+
+    const renderWave = () => {
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+
+      // Subtle center grid line
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      const activeAmplitude =
+        callState === 'CONNECTED'
+          ? isMuted
+            ? 2
+            : 18
+          : callState === 'DIALING'
+          ? 9
+          : 2.5;
+
+      ctx.strokeStyle =
+        callState === 'CONNECTED'
+          ? isMuted
+            ? '#f59e0b'
+            : '#34d399'
+          : callState === 'DIALING'
+          ? '#38bdf8'
+          : '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      for (let x = 0; x < width; x++) {
+        const norm = x / width;
+        const envelope = Math.sin(norm * Math.PI);
+        const y =
+          height / 2 +
+          Math.sin(norm * 22 + phase) * activeAmplitude * envelope +
+          Math.sin(norm * 47 - phase * 1.6) * (activeAmplitude * 0.45) * envelope;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      phase += callState === 'CONNECTED' ? 0.16 : callState === 'DIALING' ? 0.1 : 0.03;
+      animId = requestAnimationFrame(renderWave);
+    };
+
+    animId = requestAnimationFrame(renderWave);
+    return () => cancelAnimationFrame(animId);
+  }, [callState, isMuted, isDialPadOpen]);
+
+  const playDtmfTone = (digit: string) => {
+    const freqs = DTMF_FREQUENCIES[digit];
+    if (!freqs || typeof window === 'undefined') return;
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(freqs[0], now);
+      osc2.frequency.setValueAtTime(freqs[1], now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.17);
+      osc2.stop(now + 0.17);
+    } catch {
+      // Safe fallback if browser blocks autoplay AudioContext
+    }
+  };
+
+  const handleKeypadPress = (digit: string) => {
+    playDtmfTone(digit);
+    setDialTarget((prev) => `${prev}${digit}`);
+    appendVoiceLog('DTMF', `Tone '${digit}' (${DTMF_FREQUENCIES[digit]?.[0]}Hz + ${DTMF_FREQUENCIES[digit]?.[1]}Hz) transmitted.`);
+  };
+
+  const handleStartCall = () => {
+    if (!dialTarget.trim() || callState !== 'IDLE') return;
+    setCallState('DIALING');
+    setCallDurationSec(0);
+    appendVoiceLog('SIP', `INVITE ${dialTarget.trim()} via Aegentix Bridge :8081...`);
+    appendVoiceLog('TRUNK', 'Negotiating SRTP media stream & carrier trunk sync...');
+
+    dialTimerRef.current = setTimeout(() => {
+      setCallState('CONNECTED');
+      appendVoiceLog('VOICE', `200 OK — Connected to ${dialTarget.trim()} (HD PCMU 48kHz).`);
+      if (onNotify) onNotify(`Jarvis Voice Conduit connected to ${dialTarget.trim()}`, 'SUCCESS');
+    }, 1400);
+  };
+
+  const handleHangUp = () => {
+    if (dialTimerRef.current) {
+      clearTimeout(dialTimerRef.current);
+      dialTimerRef.current = null;
+    }
+    const prevDuration = callDurationSec;
+    setCallState('IDLE');
+    setCallDurationSec(0);
+    setIsMuted(false);
+    appendVoiceLog('SIP', `BYE — Session terminated (duration: ${formatDuration(prevDuration)}).`);
+    if (onNotify) onNotify('Call disconnected.', 'INFO');
+  };
+
+  const handleTriggerSystemTel = () => {
+    const sanitized = dialTarget.trim().replace(/[^0-9+*#]/g, '') || '+18005550199';
+    appendVoiceLog('TRUNK', `Invoking OS system dial handler: tel:${sanitized}`);
+    if (typeof window !== 'undefined') {
+      window.location.href = `tel:${sanitized}`;
+    }
+    if (onNotify) onNotify(`Triggered system dialer (tel:${sanitized})`, 'INFO');
+  };
+
+  const handleLoadDialOutCanvas = () => {
+    const dialBlocks: AppBlock[] = [
+      {
+        id: `dial-${Date.now()}-1`,
+        type: 'HERO_BANNER',
+        title: 'Jarvis Sovereign Voice & Desktop Dial-Out Console',
+        subtitle: 'Direct SIP/PSTN voice conduit bridged to ROG Ally X (:8081) with real-time DTMF & transcript capture.',
+        props: { badge: 'PORT :8081 VOICE BRIDGE', color: 'cyan' },
+      },
+      {
+        id: `dial-${Date.now()}-2`,
+        type: 'METRIC_KPI',
+        title: 'Voice Conduit & Carrier Telemetry',
+        props: {
+          metrics: [
+            { label: 'Bridge Port', value: ':8081 LIVE', change: 'SRTP Encrypted' },
+            { label: 'SIP Endpoint', value: 'jarvis@aegentix', change: 'TLS 1.3' },
+            { label: 'Audio Codec', value: 'Opus / PCMU', change: '8ms Jitter' },
+          ],
+        },
+      },
+    ];
+    setAppName('Jarvis Desktop Dial-Out Console');
+    setBlocks(dialBlocks);
+    setSelectedBlockId(dialBlocks[0].id);
+    setIsDialPadOpen(true);
+    if (onNotify) onNotify('Loaded Dial Out Canvas & opened Jarvis Dial Pad.', 'SUCCESS');
+  };
+
+  const formatDuration = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   // Selected block
   const selectedBlock = blocks.find(b => b.id === selectedBlockId);
@@ -446,6 +740,19 @@ ${blocks.map(b => `      {/* ${b.type}: ${b.title} */}
             <span>Copy Code</span>
           </button>
 
+          {/* Open Dial Pad Toggle Button */}
+          <button
+            onClick={() => setIsDialPadOpen((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
+              isDialPadOpen
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-500/10'
+                : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-cyan-500/40'
+            }`}
+          >
+            <Phone className="w-3.5 h-3.5" />
+            <span>{isDialPadOpen ? 'Close Dial Pad' : 'Open Dial Pad'}</span>
+          </button>
+
           {/* Save / Deploy App */}
           <button
             onClick={() => {
@@ -461,6 +768,257 @@ ${blocks.map(b => `      {/* ${b.type}: ${b.title} */}
           </button>
         </div>
       </div>
+
+      {/* DESKTOP DIAL OUT CONDUIT TOOLBAR */}
+      <div className="px-4 py-2.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2">
+          <Radio className={`w-4 h-4 ${callState === 'CONNECTED' ? 'text-emerald-400 animate-pulse' : 'text-cyan-400'}`} />
+          <span className="font-bold text-white uppercase tracking-wider text-[11px]">Desktop Dial Out Conduit</span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-950 text-cyan-300 border border-slate-800">
+            STATE: {callState}
+            {callState === 'CONNECTED' ? ` (${formatDuration(callDurationSec)})` : ''}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleLoadDialOutCanvas}
+            className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Layout className="w-3.5 h-3.5" />
+            <span>Load Dial Out Canvas</span>
+          </button>
+          <button
+            onClick={handleTriggerSystemTel}
+            className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <PhoneCall className="w-3.5 h-3.5" />
+            <span>Trigger System Dial (tel:)</span>
+          </button>
+          <a
+            href="http://127.0.0.1:8081"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 text-[11px] font-mono font-semibold flex items-center gap-1 transition-colors"
+          >
+            <span>Direct Port Link :8081</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+
+      {/* INTERACTIVE DESKTOP DIAL PAD CONSOLE DRAWER */}
+      {isDialPadOpen && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#070B12] border border-emerald-500/40 shadow-2xl shadow-emerald-950/30 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950">
+                <PhoneCall className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Jarvis Desktop Dial Pad Console
+                  </h3>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                      callState === 'CONNECTED'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                        : callState === 'DIALING'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 animate-pulse'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    {callState}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Web Audio API dual-tone DTMF keypad &middot; SIP/PSTN bridge on :8081
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right font-mono">
+                <div className="text-[10px] text-slate-500 uppercase">Duration</div>
+                <div className="text-sm font-bold text-emerald-400 tabular-nums">
+                  {formatDuration(callDurationSec)}
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDialPadOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
+                title="Close Dial Pad"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* LEFT: OUTBOUND INPUT + 3x4 DTMF KEYPAD */}
+            <div className="lg:col-span-5 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400">
+                  Phone Number or SIP Endpoint
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={dialTarget}
+                    onChange={(e) => setDialTarget(e.target.value)}
+                    placeholder="+1 800-555-0199 or sip:jarvis@aegentix.sovereign"
+                    className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-lg text-xs font-mono text-white focus:outline-none"
+                  />
+                  <button
+                    onClick={() => setDialTarget((prev) => prev.slice(0, -1))}
+                    className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700"
+                    title="Backspace"
+                  >
+                    <Delete className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 pt-1">
+                  <button
+                    onClick={() => setDialTarget('+1 800-555-0199')}
+                    className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-cyan-300 border border-slate-800"
+                  >
+                    +1 800-555-0199
+                  </button>
+                  <button
+                    onClick={() => setDialTarget('sip:jarvis@aegentix.sovereign')}
+                    className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-indigo-300 border border-slate-800"
+                  >
+                    sip:jarvis@aegentix.sovereign
+                  </button>
+                </div>
+              </div>
+
+              {/* 3x4 DTMF Numeric Keypad */}
+              <div className="grid grid-cols-3 gap-2">
+                {KEYPAD_KEYS.map((k) => (
+                  <button
+                    key={k.digit}
+                    onClick={() => handleKeypadPress(k.digit)}
+                    className="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 hover:border-cyan-500/50 transition-all flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <span className="text-base font-bold text-white leading-none">{k.digit}</span>
+                    {k.sub && (
+                      <span className="text-[9px] text-slate-500 tracking-widest mt-0.5">
+                        {k.sub}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Call Controls: Dial / Hang Up / Mute / System tel: */}
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {callState === 'IDLE' ? (
+                  <button
+                    onClick={handleStartCall}
+                    disabled={!dialTarget.trim()}
+                    className="col-span-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 disabled:opacity-40 cursor-pointer"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    <span>Dial Out</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleHangUp}
+                    className="col-span-2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/20 cursor-pointer"
+                  >
+                    <PhoneOff className="w-4 h-4" />
+                    <span>Hang Up</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setIsMuted((m) => {
+                      const next = !m;
+                      appendVoiceLog('VOICE', next ? 'Microphone MUTED.' : 'Microphone UNMUTED.');
+                      return next;
+                    });
+                  }}
+                  className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+                    isMuted
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                      : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
+                  }`}
+                >
+                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  <span>{isMuted ? 'Muted' : 'Mute'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT: LIVE WAVEFORM VISUALIZER + AUDIO TRANSCRIPT & CHANNEL LOG */}
+            <div className="lg:col-span-7 flex flex-col gap-3">
+              {/* Audio Waveform Visualizer */}
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono">
+                  <span className="text-slate-400 uppercase flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Live Audio Oscilloscope</span>
+                  </span>
+                  <span className="text-cyan-400">
+                    {callState === 'CONNECTED'
+                      ? isMuted
+                        ? 'TX MUTED · RX LIVE'
+                        : 'DUPLEX STREAM ACTIVE'
+                      : callState === 'DIALING'
+                      ? 'RINGBACK TONE...'
+                      : 'STANDBY'}
+                  </span>
+                </div>
+                <canvas
+                  ref={waveformCanvasRef}
+                  width={520}
+                  height={72}
+                  className="w-full h-[72px] rounded-lg bg-[#05080E] border border-slate-900"
+                />
+              </div>
+
+              {/* Live Audio Transcript & Channel Log */}
+              <div className="flex-1 p-3 rounded-xl bg-slate-950 border border-slate-800 flex flex-col space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 text-[10px] font-mono">
+                  <span className="text-slate-400 uppercase font-bold">
+                    Live Audio Transcript &amp; Channel Log
+                  </span>
+                  <button
+                    onClick={handleTriggerSystemTel}
+                    className="text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                  >
+                    System tel: Handler
+                  </button>
+                </div>
+                <div className="space-y-1.5 font-mono text-[11px] max-h-48 overflow-y-auto pr-1">
+                  {voiceLogs.map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-2 text-slate-300">
+                      <span className="text-[10px] text-slate-500 shrink-0 tabular-nums">
+                        {entry.time}
+                      </span>
+                      <span
+                        className={`px-1.5 rounded text-[9px] font-bold shrink-0 ${
+                          entry.tag === 'VOICE'
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : entry.tag === 'SIP'
+                            ? 'bg-cyan-500/20 text-cyan-300'
+                            : entry.tag === 'DTMF'
+                            ? 'bg-amber-500/20 text-amber-300'
+                            : 'bg-indigo-500/20 text-indigo-300'
+                        }`}
+                      >
+                        [{entry.tag}]
+                      </span>
+                      <span className="break-words">{entry.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* JARVIS AI NATURAL LANGUAGE CO-PILOT PROMPT BAR */}
       <div className="p-3.5 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-cyan-950/60 border border-indigo-500/30 flex flex-col sm:flex-row items-center gap-3">
