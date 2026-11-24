@@ -29,6 +29,9 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
 }) => {
   const primaryNavItems = [
     { id: 'COINBASE_CHAMPIONSHIP', label: 'Championship', tag: 'Rank #1' },
+    { id: 'WAVE_SURFER_TREASURY', label: 'Wave Surfer', tag: 'Tier 3' },
+    { id: 'EAGLE_SHIELD_QUANTUM', label: 'Eagle Shield', tag: 'US-SQTE' },
+    { id: 'SOVEREIGN_OS_CORE', label: 'Sovereign OS', tag: 'Kernel' },
     { id: 'BOT_HQ', label: 'Bot HQ', tag: '4 Agents' },
     { id: 'CLOUDFLARE_EDGE_WORKER', label: 'Edge Worker', tag: 'Auto-Win' },
     { id: 'COMPLIANCE_AUDIT_CHAIN', label: 'Audit Chain', tag: 'HMAC' },
