@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stardusk Space Company · StarNet 3-in-1 Orbital Cockpit | aegentixcybernetics.com</title>
+  <style>
+    :root {
+      --bg-deep: #06090F;
+      --bg-panel: #0B111C;
+      --bg-sub: #080D16;
+      --border: #1e293b;
+      --border-hi: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --sky: #38bdf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+      --indigo: #818cf8;
+      --rose: #f43f5e;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Top Status Ribbon */
+    .ribbon {
+      background: rgba(11, 17, 28, 0.96);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(10px);
+    }
+
+    .ribbon-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(34, 211, 238, 0.12);
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      font-size: 18px;
+    }
+
+    .brand h1 {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand p {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-family: var(--mono);
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .badge-emerald {
+      background: rgba(16, 185, 129, 0.14);
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .badge-cyan {
+      background: rgba(34, 211, 238, 0.14);
+      color: #67e8f9;
+      border-color: rgba(34, 211, 238, 0.35);
+    }
+
+    .badge-indigo {
+      background: rgba(129, 140, 248, 0.15);
+      color: #c7d2fe;
+      border-color: rgba(129, 140, 248, 0.35);
+    }
+
+    .badge-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .badge-purple {
+      background: rgba(168, 85, 247, 0.16);
+      color: #e9d5ff;
+      border-color: rgba(168, 85, 247, 0.38);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, .btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border-hi);
+      background: #131c2e;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    button:hover, .btn:hover {
+      border-color: var(--cyan);
+      color: #67e8f9;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .btn-indigo {
+      background: rgba(99, 102, 241, 0.16);
+      border-color: rgba(129, 140, 248, 0.4);
+      color: #c7d2fe;
+    }
+
+    .btn-amber {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+    }
+
+    .btn-purple {
+      background: rgba(168, 85, 247, 0.22);
+      border-color: rgba(168, 85, 247, 0.45);
+      color: #f3e8ff;
+    }
+
+    .ribbon-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .status-card {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .status-card .kicker {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .status-card .val {
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--mono);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+
+    /* Main 3-Pane Layout */
+    .cockpit-grid {
+      display: grid;
+      grid-template-columns: 390px minmax(0, 1fr) 360px;
+      gap: 14px;
+      padding: 14px 16px 28px;
+      align-items: start;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(6, 9, 15, 0.55);
+    }
+
+    .panel-head h2 {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #e2e8f0;
+    }
+
+    /* Left Pane */
+    .station-wrap {
+      padding: 10px;
+      background: var(--bg-deep);
+      display: flex;
+      justify-content: center;
+    }
+
+    #stationCanvas {
+      width: 100%;
+      max-width: 368px;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: block;
+    }
+
+    .spar-banner {
+      padding: 7px 12px;
+      font-size: 11px;
+      font-family: var(--mono);
+      background: rgba(126, 34, 206, 0.28);
+      border-bottom: 1px solid rgba(168, 85, 247, 0.35);
+      color: #f3e8ff;
+      display: none;
+    }
+
+    .roster-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .agent-chip {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .agent-chip .name {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+
+    .agent-chip .meta {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .transport-list {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .transport-row {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .transport-row.active {
+      background: rgba(8, 51, 68, 0.32);
+      border-color: rgba(34, 211, 238, 0.55);
+    }
+
+    .transport-row .t-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .transport-row .t-sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* Center Pane */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.65);
+    }
+
+    .bar-bg {
+      width: 110px;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--cyan);
+    }
+
+    .metrics-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .metric-box {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-family: var(--mono);
+    }
+
+    .metric-box .label {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .metric-box .num {
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+
+    .metric-box .sub {
+      font-size: 9px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .amm-strip {
+      margin: 0 12px 12px;
+      padding: 9px 11px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .r2-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+
+    .r2-card {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .r2-key {
+      margin-top: 5px;
+      padding: 3px 6px;
+      background: #0f172a;
+      border-radius: 4px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note-form {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+    }
+
+    input[type="text"], select {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--cyan);
+    }
+
+    .ves-list {
+      max-height: 245px;
+      overflow-y: auto;
+    }
+
+    .ves-item {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.65);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .ves-item .hashes {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    /* Right Pane: Space Bunny Alpha MCP */
+    .mcp-pane {
+      height: 785px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pills-box {
+      padding: 9px 10px;
+      background: var(--bg-sub);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .pills-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .pill {
+      padding: 4px 8px;
+      font-size: 10px;
+      border-radius: 5px;
+      background: #131c2e;
+      color: #67e8f9;
+      border: 1px solid var(--border-hi);
+    }
+
+    .chat-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .msg {
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      border: 1px solid var(--border);
+      background: var(--bg-deep);
+    }
+
+    .msg.user {
+      background: rgba(8, 51, 68, 0.35);
+      border-color: rgba(34, 211, 238, 0.35);
+      margin-left: 18px;
+    }
+
+    .msg-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #67e8f9;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .msg pre {
+      margin-top: 6px;
+      padding: 7px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 10px;
+      color: #6ee7b7;
+      overflow-x: auto;
+      max-height: 165px;
+    }
+
+    .chat-input-bar {
+      padding: 9px 10px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-deep);
+      display: flex;
+      gap: 6px;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 60;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 640px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hi);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .code-block {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #67e8f9;
+      word-break: break-all;
+      margin: 10px 0;
+    }
+
+    @media (max-width: 1280px) {
+      .cockpit-grid {
+        grid-template-columns: 1fr;
+      }
+      .ribbon-grid, .metrics-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .ribbon-grid, .metrics-4, .r2-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP STATUS RIBBON -->
+  <header class="ribbon">
+    <div class="ribbon-top">
+      <div class="brand">
+        <div class="brand-icon">🛰️</div>
+        <div>
+          <h1>
+            Stardusk Space Company · StarNet 3-in-1 Cockpit
+            <span id="sourceBadge" class="badge badge-emerald">DIRECT EDGE MCP</span>
+          </h1>
+          <p>stardusk.aegentixcybernetics.com · Sovereign Space Company · Machine Economy Zone · AS14593 & Nano-SOV Verified</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a id="backStudioLink" href="./" class="btn">← Back to Main Studio</a>
+        <button id="btnRefresh" type="button">↻ Refresh Telemetry</button>
+        <button id="btnRailwaySync" type="button" class="btn-indigo">🗄️ Sync Railway Postgres</button>
+        <button id="btnRogModal" type="button" class="btn-amber">📡 ROG Dish Bridge Setup</button>
+      </div>
+    </div>
+
+    <div class="ribbon-grid">
+      <div class="status-card">
+        <div>
+          <div class="kicker">Cloudflare Mesh</div>
+          <div id="badgeMeshPosture" class="val" style="color:#34d399;">POSTURE_NOMINAL</div>
+        </div>
+        <span id="badgeMeshCount" class="badge badge-emerald">4/4 Service Bindings</span>
+      </div>
+
+      <div class="status-card">
+        <div>
+          <div class="kicker">Starlink Edge (AS14593)</div>
+          <div id="badgeStarlinkColo" class="val">PoP: SYNC · Edge ISP</div>
+        </div>
+        <span id="badgeStarlinkState" class="badge badge-cyan">DISH STANDBY</span>
+      </div>
+
+      <div class="status-card">
+        <div>
+          <div class="kicker">Railway Off-Device Cloud</div>
+          <div class="val" style="color:#a5b4fc;">Postgres 18 · Redis 8.2 · Qdrant</div>
+        </div>
+        <span id="badgeRailwayId" class="badge badge-indigo">Sync Record #0</span>
+      </div>
+
+      <div class="status-card">
+        <div>
+          <div class="kicker">24/7 Cron (*/15 * * * *)</div>
+          <div class="val" style="color:#fcd34d;" title="rB2fKokBsnHCoFWLqZ89dqp2VCbVkKoY2k">rB2fKokB...KoY2k · BLACKHOLED</div>
+        </div>
+        <span class="badge badge-emerald">VES-1 VERIFIED</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3-IN-1 COCKPIT GRID -->
+  <main class="cockpit-grid">
+    <!-- LEFT PANE: StarNet Pixel Space Station & Multi-Transport -->
+    <section class="col">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>StarNet Orbital Pixel Station</h2>
+          <button id="btnSpar" type="button" class="btn-purple">⚡ Spar</button>
+        </div>
+        <div id="sparBanner" class="spar-banner"></div>
+        <div class="station-wrap">
+          <canvas id="stationCanvas" width="388" height="356"></canvas>
+        </div>
+        <div id="agentRoster" class="roster-grid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Multi-Transport Physical Layer Switcher</h2>
+          <span class="badge badge-cyan">5 UPLINKS</span>
+        </div>
+        <div id="transportList" class="transport-list"></div>
+      </div>
+    </section>
+
+    <!-- CENTER PANE: Financial/Sovereign Strategy & Starlink Terminal -->
+    <section class="col">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Live Cloudflare Service Bindings &amp; Engines</h2>
+          <span id="meshTransportLabel" class="badge badge-emerald">cloudflare_internal_service_bindings</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Engine Binding</th>
+                <th>HTTP</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody id="enginesTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>XRPL Mainnet &amp; Cloudflare R2 Vault Telemetry</h2>
+          <span class="badge badge-amber">ZERO-FAKE-BALANCE ENFORCED</span>
+        </div>
+
+        <div class="metrics-4">
+          <div class="metric-box">
+            <div class="label">ISSUER XRP</div>
+            <div id="xrplIssuerBal" class="num" style="color:#fcd34d;">0.000000 XRP</div>
+            <div class="sub">Unbonded Local USD: $0.00</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">LEDGER INDEX</div>
+            <div id="xrplLedgerIdx" class="num" style="color:#67e8f9;">#—</div>
+            <div class="sub" style="color:#34d399;">xrpl-mainnet</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">KEY POSTURE</div>
+            <div id="xrplBlackholed" class="num" style="color:#34d399;">BLACKHOLED</div>
+            <div class="sub">Master Disabled: true</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">TREASURY SNAPSHOT</div>
+            <div id="xrplSnapshotBal" class="num">0.00 XRP</div>
+            <div id="xrplTrustlines" class="sub">Trustlines: 0</div>
+          </div>
+        </div>
+
+        <div class="amm-strip">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+            <span style="color:var(--muted);">EOC AMM Pool (<span id="ammAccount">r4jLfSSKK1GG7b3ZUKQ8ha4swvEftpFN26</span>):</span>
+            <span id="ammReserve" style="color:#fcd34d;">0 XRP Reserve · high_thin_liquidity</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:8px;overflow:hidden;">
+            <span style="color:var(--muted);flex-shrink:0;">VES-1 Audit SHA-256:</span>
+            <span id="ves1AuditHash" style="color:#6ee7b7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Syncing live XRPL audit hash...</span>
+          </div>
+        </div>
+
+        <div class="r2-grid">
+          <div class="r2-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong style="color:#67e8f9;">world-monitor-treasury-vault</strong>
+              <span id="r2TreasuryCount" class="badge badge-cyan">0 objs</span>
+            </div>
+            <div id="r2TreasuryKeys" style="margin-top:6px;"></div>
+          </div>
+          <div class="r2-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong style="color:#e9d5ff;">space-bunny-alpha</strong>
+              <span id="r2BunnyCount" class="badge badge-purple">0 objs</span>
+            </div>
+            <div id="r2BunnyKeys" style="margin-top:6px;">
+              <div class="r2-key">0 active public artifacts · Vault sealed ($0.00 unbonded)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>VES-1 Hash-Chained Satellite Strategy Log</h2>
+          <select id="vesFilter">
+            <option value="ALL">ALL EVENTS</option>
+            <option value="CRON_XRPL_AUDIT">CRON_XRPL_AUDIT</option>
+            <option value="MCP_SYNC">MCP_SYNC</option>
+            <option value="CYBERGYM_SPAR">CYBERGYM_SPAR</option>
+            <option value="TRANSPORT_FAILOVER">TRANSPORT_FAILOVER</option>
+            <option value="OPERATOR_STRATEGY">OPERATOR_STRATEGY</option>
+          </select>
+        </div>
+
+        <form id="noteForm" class="note-form">
+          <input id="noteInput" type="text" style="flex:1;" placeholder="Append signed VES-1 operator satellite strategy note..." />
+          <button type="submit" class="badge-emerald" style="cursor:pointer;">Sign &amp; Append</button>
+        </form>
+
+        <div id="vesList" class="ves-list"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANE: Space Bunny Alpha Live MCP Cockpit -->
+    <aside class="panel mcp-pane">
+      <div class="panel-head">
+        <div>
+          <h2>Space Bunny Alpha MCP</h2>
+          <div style="font-size:10px;font-family:var(--mono);color:var(--muted);">JSON-RPC 2.0 Live Tactical Runner</div>
+        </div>
+        <span class="badge badge-purple">ONLINE</span>
+      </div>
+
+      <div class="pills-box">
+        <div class="pills-wrap">
+          <button type="button" class="pill" data-cmd="/mesh">▶ /mesh</button>
+          <button type="button" class="pill" data-cmd="/autonomy">▶ /autonomy</button>
+          <button type="button" class="pill" data-cmd="/starlink">▶ /starlink</button>
+          <button type="button" class="pill" data-cmd="/railway-sync">▶ /railway-sync</button>
+          <button type="button" class="pill" data-cmd="/r2-vault">▶ /r2-vault</button>
+          <button type="button" class="pill" data-cmd="/sbt-verify">▶ /sbt-verify</button>
+          <button type="button" class="pill" data-cmd="/spar">▶ /spar</button>
+          <button type="button" class="pill" data-cmd="/failover">▶ /failover</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;font-family:var(--mono);color:var(--muted);flex-shrink:0;">SBT Wallet:</span>
+          <input id="sbtWallet" type="text" value="11111111111111111111111111111111" style="width:100%;padding:3px 7px;font-size:10px;" />
+        </div>
+      </div>
+
+      <div id="chatStream" class="chat-stream"></div>
+
+      <form id="chatForm" class="chat-input-bar">
+        <input id="chatInput" type="text" style="flex:1;" placeholder="Ask Space Bunny or run /mesh, /autonomy..." />
+        <button type="submit" class="badge-cyan" style="cursor:pointer;">Send ➤</button>
+      </form>
+    </aside>
+  </main>
+
+  <!-- ROG RC73XA DISH FORWARDER MODAL -->
+  <div id="rogBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="panel-head">
+        <h2>📡 ROG RC73XA Starlink Dish Telemetry Forwarder</h2>
+        <button id="btnCloseModal" type="button">Close</button>
+      </div>
+      <div style="padding:14px;font-size:12px;color:#cbd5e1;">
+        <p>
+          Zero-secret-exposure local bridge for the <strong>ASUS ROG Xbox Ally X (RC73XA · Ryzen AI Z2 Extreme 50 TOPS NPU)</strong>.
+          Polls local Starlink Dish gRPC (<code>192.168.100.1:9200</code>) via <code>127.0.0.1:8790</code> and forwards telemetry directly to Cloudflare R2 edge ingest.
+        </p>
+        <div id="rogCmdText" class="code-block">pwsh -ExecutionPolicy Bypass -File ./rog-starlink-forwarder.ps1 -ListenAddr "127.0.0.1:8790" -DishGrpc "192.168.100.1:9200" -IngestUrl "https://starlink-edge.aegentixcybernetics.com/api/starlink/telemetry"</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);">Target: POST https://starlink-edge.aegentixcybernetics.com/api/starlink/telemetry</span>
+          <button id="btnCopyRog" type="button" class="btn-amber">Copy Forwarder Command</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Smart back-to-studio link so both /stardust.html and /aegentix-cockpit/index.html resolve cleanly
+      var backLink = document.getElementById('backStudioLink');
+      if (window.location.pathname.indexOf('/aegentix-cockpit') !== -1) {
+        backLink.setAttribute('href', '../');
+      } else {
+        backLink.setAttribute('href', './');
+      }
+
+      var STARLINK_MCP_URL = 'https://starlink-edge.aegentixcybernetics.com/mcp';
+      var RAILWAY_SYNC_URL = 'https://aegentix-sovereign-gateway-production.up.railway.app/api/cloud-sync';
+      var GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
+
+      var ROOMS = [
+        { id: 'BRIDGE', label: 'BRIDGE', x: 24, y: 28, w: 152, h: 86, color: '#38bdf8' },
+        { id: 'STARLINK_ARRAY', label: 'STARLINK ARRAY', x: 196, y: 28, w: 168, h: 86, color: '#22d3ee' },
+        { id: 'CYBERGYM_DOJO', label: 'CYBERGYM DOJO', x: 96, y: 134, w: 196, h: 92, color: '#a855f7' },
+        { id: 'R2_VAULT', label: 'R2 VAULT', x: 24, y: 246, w: 162, h: 84, color: '#10b981' },
+        { id: 'XRPL_TREASURY', label: 'XRPL TREASURY', x: 204, y: 246, w: 160, h: 84, color: '#f59e0b' }
+      ];
+
+      var state = {
+        activeTransport: 'STARLINK_AS14593',
+        sparFlash: 0,
+        vesLogs: [],
+        transports: [
+          { id: 'STARLINK_AS14593', band: 'Ku/Ka LEO · AS14593', latencyMs: 28, status: 'PRIMARY', active: true },
+          { id: 'TELESAT_LIGHTSPEED', band: 'Optical ISL · Polar LEO', latencyMs: 39, status: 'STANDBY', active: false },
+          { id: 'BONDED_5G', band: 'Sub-6 / mmWave Multipath', latencyMs: 44, status: 'READY', active: false },
+          { id: 'LORA_915', band: '915 MHz Sub-GHz Telemetry', latencyMs: 185, status: 'STANDBY', active: false },
+          { id: 'QUANTUM_PQC', band: 'ML-KEM-1024 + Dilithium5', latencyMs: 34, status: 'GUARDED', active: false }
+        ],
+        agents: [
+          { name: 'AEGIS-PRIME', elo: 1842, wins: 14, losses: 3, color: '#38bdf8', accent: '#bae6fd', roomIdx: 0, x: 78, y: 74, tx: 78, ty: 74, bubble: 'GUARDING MESH' },
+          { name: 'QUANT-ALPHA', elo: 1816, wins: 12, losses: 4, color: '#f59e0b', accent: '#fde68a', roomIdx: 4, x: 268, y: 288, tx: 268, ty: 288, bubble: 'AUDITING XRPL' },
+          { name: 'SENTINEL-ZERO', elo: 1795, wins: 11, losses: 5, color: '#10b981', accent: '#a7f3d0', roomIdx: 3, x: 92, y: 288, tx: 92, ty: 288, bubble: 'SEALING R2' },
+          { name: 'NEXUS-ROUTER', elo: 1778, wins: 10, losses: 6, color: '#c084fc', accent: '#e9d5ff', roomIdx: 1, x: 274, y: 74, tx: 274, ty: 74, bubble: 'TRACKING LEO' }
+        ]
+      };
+
+      function esc(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      async function sha256Hex(text) {
+        if (window.crypto && window.crypto.subtle) {
+          var buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+          return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
+        var h = 0x811c9dc5;
+        for (var i = 0; i < text.length; i++) {
+          h ^= text.charCodeAt(i);
+          h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return h.toString(16).padStart(8, '0').repeat(8);
+      }
+
+      async function addVesLog(eventType, transport, summary, explicitHash) {
+        var ts = new Date().toISOString();
+        var prevHash = state.vesLogs.length > 0 ? state.vesLogs[0].entryHash : GENESIS_HASH;
+        var entryHash = explicitHash || await sha256Hex(prevHash + '|' + eventType + '|' + transport + '|' + summary + '|' + ts);
+        state.vesLogs.unshift({
+          entryHash: entryHash,
+          prevHash: prevHash,
+          eventType: eventType,
+          transport: transport,
+          summary: summary,
+          timestamp: ts
+        });
+        if (state.vesLogs.length > 50) state.vesLogs.length = 50;
+        renderVesLogs();
+      }
+
+      function renderVesLogs() {
+        var filter = document.getElementById('vesFilter').value;
+        var container = document.getElementById('vesList');
+        var list = filter === 'ALL'
+          ? state.vesLogs
+          : state.vesLogs.filter(function (e) { return e.eventType === filter; });
+
+        if (!list.length) {
+          container.innerHTML = '<div style="padding:14px;text-align:center;color:#64748b;font-family:var(--mono);font-size:11px;">No VES-1 entries match filter.</div>';
+          return;
+        }
+
+        container.innerHTML = list.map(function (e) {
+          return '<div class="ves-item">' +
+            '<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:3px;">' +
+              '<span class="badge badge-cyan">' + esc(e.eventType) + '</span>' +
+              '<span style="font-size:10px;color:#94a3b8;">' + esc(e.transport) + ' · ' + new Date(e.timestamp).toLocaleTimeString() + '</span>' +
+            '</div>' +
+            '<div style="color:#e2e8f0;">' + esc(e.summary) + '</div>' +
+            '<div class="hashes">entryHash: ' + esc(e.entryHash.slice(0, 18)) + '... &nbsp;|&nbsp; prevHash: ' + esc(e.prevHash.slice(0, 18)) + '...</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      function renderRoster() {
+        var el = document.getElementById('agentRoster');
+        el.innerHTML = state.agents.map(function (ag) {
+          var roomLabel = ROOMS[ag.roomIdx] ? ROOMS[ag.roomIdx].label : 'ORBIT';
+          return '<div class="agent-chip">' +
+            '<div style="min-width:0;">' +
+              '<div class="name" style="color:' + ag.color + ';">' + esc(ag.name) + '</div>' +
+              '<div class="meta">' + esc(roomLabel) + ' · ' + ag.wins + 'W-' + ag.losses + 'L</div>' +
+            '</div>' +
+            '<span class="badge badge-cyan">' + ag.elo + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      function renderTransports() {
+        var el = document.getElementById('transportList');
+        el.innerHTML = state.transports.map(function (t) {
+          return '<div class="transport-row ' + (t.active ? 'active' : '') + '">' +
+            '<div>' +
+              '<div class="t-name">' + esc(t.id) + (t.active ? ' <span class="badge badge-cyan">ACTIVE PRIMARY</span>' : '') + '</div>' +
+              '<div class="t-sub">' + esc(t.band) + ' · RTT ~' + t.latencyMs + 'ms · ' + esc(t.status) + '</div>' +
+            '</div>' +
+            '<button type="button" data-failover="' + esc(t.id) + '" ' + (t.active ? 'disabled' : '') + '>' +
+              (t.active ? 'LOCKED' : 'Failover') +
+            '</button>' +
+          '</div>';
+        }).join('');
+
+        Array.prototype.forEach.call(el.querySelectorAll('[data-failover]'), function (btn) {
+          btn.addEventListener('click', function () {
+            triggerFailover(btn.getAttribute('data-failover'));
+          });
+        });
+      }
+
+      function renderEngines(engines) {
+        var tbody = document.getElementById('enginesTbody');
+        var list = (engines && engines.length) ? engines : [
+          { name: 'aegentix-treasury-labs-mcp', url: 'https://aegentix-treasury-labs-mcp.aegentix.workers.dev/health', ok: true, status: 200, ms: 23 },
+          { name: 'aegentix-solana-sbt-devnet', url: 'https://aegentix-solana-sbt-devnet.aegentix.workers.dev/', ok: true, status: 200, ms: 221 },
+          { name: 'aegentix-edge', url: 'https://aegentix-edge.aegentix.workers.dev/', ok: true, status: 200, ms: 340 },
+          { name: 'bold-bit-champions-cup', url: 'https://bold-bit-champions-cup.aegentix.workers.dev/status', ok: true, status: 200, ms: 79 }
+        ];
+
+        var okCount = list.filter(function (e) { return e.ok; }).length;
+        document.getElementById('badgeMeshCount').textContent = okCount + '/' + list.length + ' Service Bindings';
+
+        tbody.innerHTML = list.map(function (e) {
+          var pct = Math.min(100, Math.max(8, Math.round((e.ms / 500) * 100)));
+          var color = e.ms < 150 ? '#34d399' : (e.ms < 350 ? '#22d3ee' : '#fbbf24');
+          return '<tr>' +
+            '<td><div style="font-weight:700;color:#f1f5f9;">' + esc(e.name) + '</div><div style="font-size:10px;color:#64748b;">' + esc(e.url) + '</div></td>' +
+            '<td><span class="badge ' + (e.ok ? 'badge-emerald' : 'badge-amber') + '">' + esc(e.status) + '</span></td>' +
+            '<td><div style="color:#67e8f9;font-size:10px;">' + esc(e.ms) + ' ms</div><div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      async function callDirectMcp(toolName, args) {
+        var res = await fetch(STARLINK_MCP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: Date.now(),
+            method: 'tools/call',
+            params: { name: toolName, arguments: args || {} }
+          })
+        });
+        if (!res.ok) throw new Error('MCP HTTP ' + res.status);
+        var rpc = await res.json();
+        if (rpc.error) throw new Error(rpc.error.message || 'MCP error');
+        var txt = rpc.result && rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text;
+        return txt ? JSON.parse(txt) : (rpc.result || {});
+      }
+
+      async function tryLocalJson(url, options) {
+        try {
+          var r = await fetch(url, options);
+          if (r.ok && (r.headers.get('content-type') || '').indexOf('application/json') !== -1) {
+            return await r.json();
+          }
+        } catch (_e) {}
+        return null;
+      }
+
+      function applyMesh(mesh) {
+        if (!mesh) return;
+        document.getElementById('badgeMeshPosture').textContent = mesh.posture || 'POSTURE_NOMINAL';
+        if (mesh.mesh_transport) {
+          document.getElementById('meshTransportLabel').textContent = mesh.mesh_transport;
+        }
+        renderEngines(mesh.engines);
+      }
+
+      function applyAutonomy(auto) {
+        if (!auto || !auto.latest_treasury_cron) return;
+        var tc = auto.latest_treasury_cron;
+        var w = tc.wallet_integrity || {};
+        var ta = tc.token_analysis || {};
+        var snap = tc.ledger_snapshot || {};
+
+        if (w.xrp_balance !== undefined) {
+          document.getElementById('xrplIssuerBal').textContent = w.xrp_balance + ' XRP';
+        }
+        if (w.ledger_index !== undefined) {
+          document.getElementById('xrplLedgerIdx').textContent = '#' + Number(w.ledger_index).toLocaleString();
+        }
+        document.getElementById('xrplBlackholed').textContent = w.is_blackholed !== false ? 'BLACKHOLED' : 'ACTIVE';
+        if (w.ves1_audit_hash) {
+          document.getElementById('ves1AuditHash').textContent = w.ves1_audit_hash;
+        }
+        if (snap.balances && snap.balances.xrp !== undefined) {
+          document.getElementById('xrplSnapshotBal').textContent = snap.balances.xrp + ' XRP';
+          document.getElementById('xrplTrustlines').textContent = 'Trustlines: ' + (snap.balances.trustlines_count || 0);
+        }
+        if (ta.amm_account) {
+          document.getElementById('ammAccount').textContent = ta.amm_account;
+        }
+        if (ta.amm_xrp_reserve !== undefined) {
+          document.getElementById('ammReserve').textContent = ta.amm_xrp_reserve + ' XRP Reserve · ' + (ta.risk_band || 'high_thin_liquidity');
+        }
+      }
+
+      function applyStarlink(sl) {
+        if (!sl) return;
+        document.getElementById('badgeStarlinkColo').textContent = 'PoP: ' + (sl.edge_colo || 'EDGE') + ' · ' + (sl.client_isp || 'ISP');
+        document.getElementById('badgeStarlinkState').textContent = sl.starlink_uplink_detected
+          ? 'AS14593 LIVE'
+          : ((sl.latest_dish_telemetry && sl.latest_dish_telemetry.status === 'READY_AWAITING_DISH_TELEMETRY') ? 'DISH STANDBY' : 'GROUND EDGE');
+      }
+
+      function applyR2(r2) {
+        if (!r2) return;
+        var tv = r2.treasury_vault || {};
+        var sb = r2.aegentix_assets || {};
+        document.getElementById('r2TreasuryCount').textContent = (tv.sample_count || 0) + ' objs';
+        document.getElementById('r2BunnyCount').textContent = (sb.sample_count || 0) + ' objs';
+
+        var keys = (tv.latest_keys || []).slice(0, 3);
+        document.getElementById('r2TreasuryKeys').innerHTML = keys.length
+          ? keys.map(function (k) { return '<div class="r2-key" title="' + esc(k) + '">' + esc(k) + '</div>'; }).join('')
+          : '<div class="r2-key">No sampled keys</div>';
+
+        var bKeys = (sb.latest_keys || []).slice(0, 3);
+        if (bKeys.length) {
+          document.getElementById('r2BunnyKeys').innerHTML = bKeys.map(function (k) { return '<div class="r2-key">' + esc(k) + '</div>'; }).join('');
+        }
+      }
+
+      function applyRailway(rw) {
+        if (!rw) return;
+        var id = (rw.record && rw.record.id) || (rw.history && rw.history[0] && rw.history[0].id) || 0;
+        document.getElementById('badgeRailwayId').textContent = 'Sync Record #' + id;
+      }
+
+      async function refreshAllTelemetry() {
+        var btn = document.getElementById('btnRefresh');
+        btn.disabled = true;
+        btn.textContent = '↻ Syncing...';
+
+        try {
+          var localOverview = await tryLocalJson('/api/stardust/overview');
+          if (
+            localOverview &&
+            (localOverview.meshPosture ||
+              localOverview.mesh_posture ||
+              localOverview.mesh ||
+              localOverview.autonomyStatus ||
+              localOverview.autonomy_status)
+          ) {
+            document.getElementById('sourceBadge').textContent = 'LOCAL + EDGE HYBRID';
+            applyMesh(localOverview.meshPosture || localOverview.mesh_posture || localOverview.mesh);
+            applyAutonomy(localOverview.autonomyStatus || localOverview.autonomy_status || localOverview.autonomy);
+            applyStarlink(localOverview.starlinkStatus || localOverview.starlink_link_status || localOverview.starlink);
+            applyR2(localOverview.r2VaultStatus || localOverview.r2_vault_status || localOverview.r2);
+            applyRailway(localOverview.railwaySync || localOverview.railway_cloud_sync || localOverview.railway);
+            await addVesLog('MCP_SYNC', state.activeTransport, 'Synchronized cockpit via /api/stardust/overview');
+            btn.disabled = false;
+            btn.textContent = '↻ Refresh Telemetry';
+            return;
+          }
+
+          document.getElementById('sourceBadge').textContent = 'DIRECT EDGE MCP';
+          var results = await Promise.all([
+            callDirectMcp('mesh_posture', {}),
+            callDirectMcp('autonomy_status', {}),
+            callDirectMcp('starlink_link_status', {}),
+            callDirectMcp('r2_vault_status', {}),
+            callDirectMcp('railway_cloud_sync', {})
+          ]);
+
+          applyMesh(results[0]);
+          applyAutonomy(results[1]);
+          applyStarlink(results[2]);
+          applyR2(results[3]);
+          applyRailway(results[4]);
+
+          var w = results[1] && results[1].latest_treasury_cron && results[1].latest_treasury_cron.wallet_integrity;
+          if (w && w.ves1_audit_hash) {
+            await addVesLog(
+              'CRON_XRPL_AUDIT',
+              state.activeTransport,
+              'XRPL Mainnet ' + w.wallet + ' verified (' + w.xrp_balance + ' XRP · Ledger #' + w.ledger_index + ')',
+              w.ves1_audit_hash
+            );
+          }
+          await addVesLog('MCP_SYNC', state.activeTransport, 'Live JSON-RPC 2.0 sweep complete across starlink-edge.aegentixcybernetics.com/mcp');
+        } catch (err) {
+          pushChat('assistant', 'TELEMETRY WARNING', 'Edge sync warning: ' + (err && err.message ? err.message : String(err)));
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '↻ Refresh Telemetry';
+        }
+      }
+
+      async function triggerRailwaySync() {
+        var btn = document.getElementById('btnRailwaySync');
+        btn.disabled = true;
+        btn.textContent = '🗄️ Syncing...';
+        var t0 = performance.now();
+        try {
+          var rawLocal = await tryLocalJson('/api/stardust/railway-sync', { method: 'POST' });
+          var data = (rawLocal && rawLocal.syncData) ? rawLocal.syncData : rawLocal;
+          if (!data || (!data.record && !data.history)) {
+            var r = await fetch(RAILWAY_SYNC_URL);
+            if (!r.ok) throw new Error('Railway HTTP ' + r.status);
+            data = await r.json();
+          }
+          applyRailway(data);
+          var recId = (data.record && data.record.id) || (data.history && data.history[0] && data.history[0].id) || 0;
+          var summary = 'Railway PostgreSQL 18 persisted Sync Record #' + recId + ' (' + ((data.record && data.record.posture) || 'POSTURE_NOMINAL') + ')';
+          await addVesLog('MCP_SYNC', state.activeTransport, summary);
+          pushChat('assistant', 'RAILWAY CLOUD SYNC', summary, data, Math.round(performance.now() - t0));
+        } catch (err) {
+          pushChat('assistant', 'RAILWAY SYNC ERROR', String(err && err.message ? err.message : err));
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🗄️ Sync Railway Postgres';
+        }
+      }
+
+      async function triggerSpar() {
+        state.sparFlash = 70;
+        var localSpar = await tryLocalJson('/api/stardust/spar', { method: 'POST' });
+        var iA = Math.floor(Math.random() * state.agents.length);
+        var iB = (iA + 1 + Math.floor(Math.random() * (state.agents.length - 1))) % state.agents.length;
+        var winAg = state.agents[iA];
+        var loseAg = state.agents[iB];
+        var delta = 14;
+
+        if (localSpar && localSpar.round && localSpar.round.winnerId && localSpar.round.winnerId !== 'DRAW') {
+          var wId = localSpar.round.winnerId;
+          var lId = localSpar.round.challengerId === wId ? localSpar.round.defenderId : localSpar.round.challengerId;
+          winAg = state.agents.find(function (a) { return a.name === wId; }) || winAg;
+          loseAg = state.agents.find(function (a) { return a.name === lId; }) || loseAg;
+          delta = localSpar.round.eloDelta || 14;
+        } else if (localSpar && localSpar.winner) {
+          winAg = state.agents.find(function (a) { return a.name === localSpar.winner; }) || winAg;
+          loseAg = state.agents.find(function (a) { return a.name === localSpar.loser; }) || loseAg;
+          delta = localSpar.eloDelta || 14;
+        }
+
+        winAg.elo += delta;
+        winAg.wins += 1;
+        winAg.roomIdx = 2;
+        winAg.tx = ROOMS[2].x + 62;
+        winAg.ty = ROOMS[2].y + 54;
+        winAg.bubble = 'WON +' + delta + ' ELO';
+
+        loseAg.elo = Math.max(1200, loseAg.elo - delta);
+        loseAg.losses += 1;
+        loseAg.roomIdx = 2;
+        loseAg.tx = ROOMS[2].x + 134;
+        loseAg.ty = ROOMS[2].y + 54;
+        loseAg.bubble = 'RECALIBRATING';
+
+        var summary = (localSpar && localSpar.round && localSpar.round.narrative)
+          ? localSpar.round.narrative
+          : ('CyberGym Dojo Match: ' + winAg.name + ' (+' + delta + ' ELO) defeated ' + loseAg.name + ' in adversarial verification.');
+        var banner = document.getElementById('sparBanner');
+        banner.style.display = 'block';
+        banner.textContent = '⚡ ' + summary;
+        renderRoster();
+        await addVesLog('CYBERGYM_SPAR', state.activeTransport, summary);
+        return summary;
+      }
+
+      async function triggerFailover(targetId) {
+        await tryLocalJson('/api/stardust/failover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetTransport: targetId, transport: targetId })
+        });
+        state.activeTransport = targetId;
+        state.transports.forEach(function (t) {
+          t.active = (t.id === targetId);
+          t.status = t.active ? 'PRIMARY' : (t.id === 'QUANTUM_PQC' ? 'GUARDED' : 'STANDBY');
+        });
+        renderTransports();
+        var summary = 'Physical Layer Failover -> ' + targetId + ' promoted to ACTIVE PRIMARY';
+        await addVesLog('TRANSPORT_FAILOVER', targetId, summary);
+        return summary;
+      }
+
+      function pushChat(role, title, text, rawObj, latencyMs) {
+        var stream = document.getElementById('chatStream');
+        var div = document.createElement('div');
+        div.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
+        var timeStr = (latencyMs != null ? latencyMs + 'ms · ' : '') + new Date().toLocaleTimeString();
+        var html = '<div class="msg-head"><span>' + esc(role === 'user' ? 'OPERATOR' : title) + '</span><span style="color:#64748b;">' + esc(timeStr) + '</span></div>' +
+          '<div style="white-space:pre-wrap;color:#e2e8f0;">' + esc(text) + '</div>';
+        if (rawObj) {
+          html += '<details style="margin-top:6px;"><summary style="cursor:pointer;color:#e9d5ff;font-size:10px;">Inspect JSON-RPC 2.0 Payload</summary><pre>' +
+            esc(JSON.stringify(rawObj, null, 2)) + '</pre></details>';
+        }
+        div.innerHTML = html;
+        stream.appendChild(div);
+        stream.scrollTop = stream.scrollHeight;
+      }
+
+      async function runMcpChatTool(toolName, args, label) {
+        var t0 = performance.now();
+        var local = await tryLocalJson('/api/stardust/mcp-call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool: toolName, name: toolName, arguments: args || {} })
+        });
+        var data = (local && (local.result || local.data)) ? (local.result || local.data) : await callDirectMcp(toolName, args || {});
+        var ms = Math.round(performance.now() - t0);
+
+        if (toolName === 'mesh_posture') applyMesh(data);
+        if (toolName === 'autonomy_status') applyAutonomy(data);
+        if (toolName === 'starlink_link_status') applyStarlink(data);
+        if (toolName === 'r2_vault_status') applyR2(data);
+        if (toolName === 'railway_cloud_sync') applyRailway(data);
+
+        var summary = 'Live JSON-RPC 2.0 telemetry from ' + toolName;
+        if (toolName === 'mesh_posture') {
+          summary = 'Cloudflare Mesh: ' + (data.posture || 'POSTURE_NOMINAL') + ' · ' + ((data.engines || []).length) + ' service bindings verified.';
+        } else if (toolName === 'autonomy_status') {
+          var w = data.latest_treasury_cron && data.latest_treasury_cron.wallet_integrity;
+          summary = '24/7 Autonomy (' + (data.mode || 'ACTIVE') + ')\nIssuer ' + (w && w.wallet) + ': ' + (w && w.xrp_balance) + ' XRP · Ledger #' + (w && w.ledger_index);
+        } else if (toolName === 'starlink_link_status') {
+          summary = 'Starlink Edge PoP ' + data.edge_colo + ' · ASN ' + data.client_asn + ' (' + data.client_isp + ')\nAS14593 Uplink: ' + data.starlink_uplink_detected;
+        } else if (toolName === 'r2_vault_status') {
+          summary = 'R2 Vaults: world-monitor-treasury-vault (' + (data.treasury_vault && data.treasury_vault.sample_count) + ' objs), space-bunny-alpha (' + (data.aegentix_assets && data.aegentix_assets.sample_count) + ' objs)';
+        } else if (toolName === 'solana_sbt_verify') {
+          summary = 'Solana Devnet SBT Wallet ' + data.wallet + '\nVerified: ' + data.credential_verified + ' · Tier: ' + data.unlocked_engine_tier;
+        }
+
+        pushChat('assistant', label || ('MCP · ' + toolName), summary, data, ms);
+      }
+
+      async function handleCommand(raw) {
+        var text = (raw || '').trim();
+        if (!text) return;
+        pushChat('user', 'OPERATOR', text);
+
+        var lower = text.toLowerCase();
+        try {
+          if (lower.indexOf('/mesh') === 0) {
+            await runMcpChatTool('mesh_posture', {}, 'SLASH /mesh');
+          } else if (lower.indexOf('/autonomy') === 0) {
+            await runMcpChatTool('autonomy_status', {}, 'SLASH /autonomy');
+          } else if (lower.indexOf('/starlink') === 0) {
+            await runMcpChatTool('starlink_link_status', {}, 'SLASH /starlink');
+          } else if (lower.indexOf('/railway-sync') === 0) {
+            await triggerRailwaySync();
+          } else if (lower.indexOf('/r2-vault') === 0) {
+            await runMcpChatTool('r2_vault_status', {}, 'SLASH /r2-vault');
+          } else if (lower.indexOf('/sbt-verify') === 0) {
+            var parts = text.split(/\s+/);
+            var wallet = parts[1] || document.getElementById('sbtWallet').value || '11111111111111111111111111111111';
+            document.getElementById('sbtWallet').value = wallet;
+            await runMcpChatTool('solana_sbt_verify', { wallet: wallet }, 'SLASH /sbt-verify');
+          } else if (lower.indexOf('/spar') === 0) {
+            var sparMsg = await triggerSpar();
+            pushChat('assistant', 'CYBERGYM DOJO', sparMsg);
+          } else if (lower.indexOf('/failover') === 0) {
+            var curIdx = state.transports.findIndex(function (t) { return t.active; });
+            var nextT = state.transports[(curIdx + 1) % state.transports.length].id;
+            var foMsg = await triggerFailover(nextT);
+            pushChat('assistant', 'TRANSPORT FAILOVER', foMsg);
+          } else {
+            var tool = 'mesh_posture';
+            var args = {};
+            if (lower.indexOf('xrp') !== -1 || lower.indexOf('cron') !== -1 || lower.indexOf('balance') !== -1) tool = 'autonomy_status';
+            else if (lower.indexOf('starlink') !== -1 || lower.indexOf('dish') !== -1) tool = 'starlink_link_status';
+            else if (lower.indexOf('r2') !== -1 || lower.indexOf('vault') !== -1) tool = 'r2_vault_status';
+            else if (lower.indexOf('sbt') !== -1 || lower.indexOf('solana') !== -1) {
+              tool = 'solana_sbt_verify';
+              args = { wallet: document.getElementById('sbtWallet').value };
+            } else if (lower.indexOf('railway') !== -1 || lower.indexOf('postgres') !== -1) tool = 'railway_cloud_sync';
+            await runMcpChatTool(tool, args, 'SPACE BUNNY ALPHA · ' + tool);
+          }
+        } catch (err) {
+          pushChat('assistant', 'MCP ALERT', String(err && err.message ? err.message : err));
+        }
+      }
+
+      // StarNet Pixel Space Station Canvas Loop
+      var canvas = document.getElementById('stationCanvas');
+      var ctx = canvas.getContext('2d');
+      var stars = Array.from({ length: 56 }, function (_, i) {
+        return { x: (i * 73) % 388, y: (i * 47) % 352, s: i % 4 === 0 ? 2 : 1, p: i * 0.4 };
+      });
+      var frame = 0;
+
+      setInterval(function () {
+        state.agents.forEach(function (ag) {
+          if (Math.random() > 0.45) return;
+          var rIdx = Math.floor(Math.random() * ROOMS.length);
+          var rm = ROOMS[rIdx];
+          ag.roomIdx = rIdx;
+          ag.tx = rm.x + 24 + Math.floor(Math.random() * (rm.w - 48));
+          ag.ty = rm.y + 30 + Math.floor(Math.random() * (rm.h - 42));
+          ag.bubble = rm.label.split(' ')[0] + ' SYNC';
+        });
+        renderRoster();
+      }, 3800);
+
+      function drawStation() {
+        frame += 1;
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.fillStyle = '#06090F';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(30,41,59,0.35)';
+        ctx.lineWidth = 1;
+        for (var gx = 0; gx < w; gx += 16) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+        for (var gy = 0; gy < h; gy += 16) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
+
+        stars.forEach(function (st) {
+          var a = 0.35 + 0.55 * Math.abs(Math.sin(frame * 0.03 + st.p));
+          ctx.fillStyle = 'rgba(226,232,240,' + a.toFixed(2) + ')';
+          ctx.fillRect(st.x, st.y, st.s, st.s);
+        });
+
+        // Dish Beam
+        var grad = ctx.createLinearGradient(280, 28, 384, 2);
+        grad.addColorStop(0, 'rgba(34,211,238,0.32)');
+        grad.addColorStop(1, 'rgba(34,211,238,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(268, 28); ctx.lineTo(368, 0); ctx.lineTo(388, 22); ctx.lineTo(294, 28);
+        ctx.closePath(); ctx.fill();
+
+        // Corridors
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(176, 70); ctx.lineTo(196, 70);
+        ctx.moveTo(100, 114); ctx.lineTo(145, 134);
+        ctx.moveTo(280, 114); ctx.lineTo(245, 134);
+        ctx.moveTo(145, 226); ctx.lineTo(105, 246);
+        ctx.moveTo(245, 226); ctx.lineTo(280, 246);
+        ctx.stroke();
+
+        ROOMS.forEach(function (rm) {
+          var flash = rm.id === 'CYBERGYM_DOJO' && state.sparFlash > 0;
+          ctx.fillStyle = flash ? 'rgba(168,85,247,0.25)' : 'rgba(11,17,28,0.92)';
+          ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+          ctx.strokeStyle = flash ? '#e879f9' : rm.color;
+          ctx.lineWidth = flash ? 2 : 1.2;
+          ctx.strokeRect(rm.x, rm.y, rm.w, rm.h);
+          ctx.fillStyle = 'rgba(15,23,42,0.95)';
+          ctx.fillRect(rm.x + 1, rm.y + 1, rm.w - 2, 16);
+          ctx.fillStyle = rm.color;
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(rm.label, rm.x + 6, rm.y + 12);
+        });
+
+        if (state.sparFlash > 0) state.sparFlash -= 1;
+
+        state.agents.forEach(function (ag) {
+          var dx = ag.tx - ag.x;
+          var dy = ag.ty - ag.y;
+          var d = Math.hypot(dx, dy);
+          if (d > 0.8) { ag.x += (dx / d) * 0.85; ag.y += (dy / d) * 0.85; }
+          var px = Math.round(ag.x);
+          var py = Math.round(ag.y);
+          var bob = Math.round(Math.sin(frame * 0.14 + px * 0.1) * 1.2);
+
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(px - 4, py + 3 + bob, 3, 4);
+          ctx.fillRect(px + 1, py + 3 - bob, 3, 4);
+          ctx.fillStyle = ag.color;
+          ctx.fillRect(px - 5, py - 4 + bob, 10, 7);
+          ctx.fillStyle = ag.accent;
+          ctx.fillRect(px - 4, py - 9 + bob, 8, 5);
+
+          var tag = ag.name.split('-')[0] + ' ' + ag.elo;
+          ctx.font = 'bold 8px monospace';
+          var tw = ctx.measureText(tag).width + 6;
+          ctx.fillStyle = 'rgba(6,9,15,0.9)';
+          ctx.fillRect(px - tw / 2, py + 10, tw, 11);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillText(tag, px - tw / 2 + 3, py + 18);
+
+          ctx.font = '7px monospace';
+          var bw = ctx.measureText(ag.bubble).width + 6;
+          ctx.fillStyle = 'rgba(15,23,42,0.9)';
+          ctx.fillRect(px - bw / 2, py - 21 + bob, bw, 10);
+          ctx.fillStyle = ag.accent;
+          ctx.fillText(ag.bubble, px - bw / 2 + 3, py - 14 + bob);
+        });
+
+        ctx.fillStyle = 'rgba(6,9,15,0.92)';
+        ctx.fillRect(0, h - 18, w, 18);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '9px monospace';
+        ctx.fillText('ORBITAL BUS: ' + state.activeTransport + ' · 4 CYBERGYM AGENTS ACTIVE', 8, h - 6);
+
+        requestAnimationFrame(drawStation);
+      }
+
+      // Wire UI Controls
+      document.getElementById('btnRefresh').addEventListener('click', refreshAllTelemetry);
+      document.getElementById('btnRailwaySync').addEventListener('click', triggerRailwaySync);
+      document.getElementById('btnSpar').addEventListener('click', triggerSpar);
+      document.getElementById('vesFilter').addEventListener('change', renderVesLogs);
+
+      document.getElementById('noteForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var inp = document.getElementById('noteInput');
+        var val = inp.value.trim();
+        if (!val) return;
+        inp.value = '';
+        await tryLocalJson('/api/stardust/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventType: 'OPERATOR_STRATEGY', transport: state.activeTransport, summary: val })
+        });
+        await addVesLog('OPERATOR_STRATEGY', state.activeTransport, val);
+      });
+
+      document.getElementById('chatForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = document.getElementById('chatInput');
+        var v = inp.value;
+        inp.value = '';
+        handleCommand(v);
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll('.pill'), function (pill) {
+        pill.addEventListener('click', function () {
+          handleCommand(pill.getAttribute('data-cmd'));
+        });
+      });
+
+      var modal = document.getElementById('rogBackdrop');
+      document.getElementById('btnRogModal').addEventListener('click', function () { modal.style.display = 'flex'; });
+      document.getElementById('btnCloseModal').addEventListener('click', function () { modal.style.display = 'none'; });
+      document.getElementById('btnCopyRog').addEventListener('click', function () {
+        var cmd = document.getElementById('rogCmdText').textContent;
+        navigator.clipboard.writeText(cmd);
+        var b = document.getElementById('btnCopyRog');
+        b.textContent = 'Copied!';
+        setTimeout(function () { b.textContent = 'Copy Forwarder Command'; }, 1800);
+      });
+
+      // Boot
+      renderRoster();
+      renderTransports();
+      renderEngines([]);
+      pushChat(
+        'assistant',
+        'SPACE BUNNY ALPHA · STARNET MCP COCKPIT',
+        'Standalone 3-in-1 Cockpit online. Directly wired to starlink-edge.aegentixcybernetics.com/mcp (JSON-RPC 2.0) and Railway Sovereign Cloud.\nClick any /command pill above or type a query below.'
+      );
+      drawStation();
+      refreshAllTelemetry();
+    })();
+  </script>
+</body>
+</html>

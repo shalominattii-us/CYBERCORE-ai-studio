@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: aegentix-cybercore-studio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STARLINK_EDGE_URL
+        value: https://starlink-edge.aegentixcybernetics.com
+      - key: RAILWAY_GATEWAY_URL
+        value: https://aegentix-sovereign-gateway-production.up.railway.app

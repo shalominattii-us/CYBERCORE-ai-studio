@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "contractName": "Stardusk Research Bridge",
+  "schemaVersion": "1.0",
+  "company": "Stardusk — Dedicated Uncrewed Orbital Research Laboratory",
+  "zoneHomebase": "https://aegentixcybernetics.com",
+  "portalOrigin": "https://portal.aegentixcybernetics.com",
+  "starduskOrigin": "https://stardusk.aegentixcybernetics.com",
+  "moduleId": "sovereign.research.orbital",
+  "tokenPrefix": "sdk_",
+  "scopes": ["research:ingest", "decisions:read"],
+  "endpoints": {
+    "ingest": "POST /api/rpc/research/ingest",
+    "decisions": "POST /api/rpc/research/decisions",
+    "contract": "GET /api/rpc/research/contract",
+    "state": "GET /api/rpc/research/state"
+  },
+  "envelope": "{\"json\": VALUE}",
+  "externalExecutionAuthorized": false,
+  "workstreams": [
+    "Workstream 1: Uncrewed Orbital Lab Technical Requirements & System Architecture (Materials Research & Space Hardware Testing)",
+    "Workstream 2: Verified Public Non-Dilutive Grants, SBIR/STTR & Funding Opportunities"
+  ]
+}

@@ -1,21 +1,54 @@
-name = "aegentix-edge-worker"
+name = "aegentix-cybercore-stardust"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 workers_dev = true
 
 [vars]
-ORIGIN_URL = "https://studio-origin.aegentixcybernetics.com"
-FALLBACK_ORIGIN_URL = "https://cybercore-ai-studio.onrender.com"
+ZONE_NAME = "aegentixcybernetics.com"
+ORIGIN_URL = "https://shalominattii-us.github.io/CYBERCORE-ai-studio"
+FALLBACK_ORIGIN_URL = "https://aegentix-sovereign-gateway-production.up.railway.app"
+STARLINK_EDGE_URL = "https://starlink-edge.aegentixcybernetics.com"
+AEGENTIX_EDGE_API_URL = "https://api.aegentixcybernetics.com"
+RAILWAY_GATEWAY_URL = "https://aegentix-sovereign-gateway-production.up.railway.app"
 MIN_POSITIVE_ALPHA_USD = "5.00"
-EDGE_WORKER_VERSION = "2.4.0-championship"
+OPERATOR_REWARD_SPLIT = "0.70"
+AI_AGENT_REWARD_SPLIT = "0.30"
+EDGE_WORKER_VERSION = "3.2.0-zone-nanotx"
 
-# Custom domain route for production deployment
-# [[routes]]
-# pattern = "studio.aegentixcybernetics.com/*"
-# zone_name = "aegentixcybernetics.com"
+# Planted & anchored directly in the aegentixcybernetics.com Cloudflare Zone
+# Preserves existing live zone hosts (aegentixcybernetics.com, studio.*, edge.*, api.*, starlink-edge.*, starlink-mcp.*)
+[[routes]]
+pattern = "stardusk.aegentixcybernetics.com"
+zone_name = "aegentixcybernetics.com"
+custom_domain = true
+
+[[routes]]
+pattern = "stardust.aegentixcybernetics.com"
+zone_name = "aegentixcybernetics.com"
+custom_domain = true
+
+[[routes]]
+pattern = "cybercore.aegentixcybernetics.com"
+zone_name = "aegentixcybernetics.com"
+custom_domain = true
+
+[[routes]]
+pattern = "cockpit.aegentixcybernetics.com"
+zone_name = "aegentixcybernetics.com"
+custom_domain = true
+
+[[routes]]
+pattern = "openplanter.aegentixcybernetics.com"
+zone_name = "aegentixcybernetics.com"
+custom_domain = true
+
+[[routes]]
+pattern = "nano.aegentixcybernetics.com"
+zone_name = "aegentixcybernetics.com"
+custom_domain = true
 
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/15 * * * *"]
 
 [observability]
 enabled = true
@@ -24,3 +57,6 @@ enabled = true
 binding = "AEGENTIX_ASSETS"
 bucket_name = "space-bunny-alpha"
 
+[[r2_buckets]]
+binding = "TREASURY_VAULT"
+bucket_name = "world-monitor-treasury-vault"

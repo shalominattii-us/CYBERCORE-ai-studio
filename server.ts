@@ -60,6 +60,11 @@ import { eagleShieldQuantumRouter } from './src/api/eagleShieldQuantum.ts';
 import { sovereignOsCoreRouter } from './src/api/sovereignOsCore.ts';
 import { vibeCodeLabRouter } from './src/api/vibeCodeLab.ts';
 import { prismSwarmRouter } from './src/api/prismSwarm.ts';
+import { stardustMcpRouter } from './src/api/stardustMcp.ts';
+import { openPlanterStudioRouter } from './src/api/openPlanterStudio.ts';
+import { authSessionRouter } from './src/api/authSession.ts';
+import { nanotransactionRewardsRouter } from './src/api/nanotransactionRewards.ts';
+import { starduskResearchBridgeRouter } from './src/api/starduskResearchBridge.ts';
 
 dotenv.config();
 
@@ -183,19 +188,38 @@ app.use((req, res, next) => {
   next();
 });
 
-// Domain & Cloudflare Edge Routing Diagnostics
+// Domain & Cloudflare Edge Routing Diagnostics (Planted in aegentixcybernetics.com Zone)
 app.get('/api/domain/status', (req, res) => {
   res.status(200).json({
     status: 'operational',
-    canonicalDomain: 'https://studio.aegentixcybernetics.com',
-    host: req.headers.host || 'studio.aegentixcybernetics.com',
+    zone: 'aegentixcybernetics.com',
+    canonicalDomain: 'https://cybercore.aegentixcybernetics.com',
+    zoneAnchors: [
+      'https://aegentixcybernetics.com',
+      'https://portal.aegentixcybernetics.com',
+      'https://stardusk.aegentixcybernetics.com',
+      'https://openplanter.aegentixcybernetics.com',
+      'https://nano.aegentixcybernetics.com',
+      'https://cockpit.aegentixcybernetics.com',
+      'https://cybercore.aegentixcybernetics.com',
+      'https://studio.aegentixcybernetics.com',
+      'https://starlink-edge.aegentixcybernetics.com',
+      'https://edge.aegentixcybernetics.com',
+      'https://api.aegentixcybernetics.com',
+    ],
+    host: req.headers.host || 'portal.aegentixcybernetics.com',
     edgeColo: req.headers['x-edge-colo'] || 'DIRECT',
     edgeWorkerActive: Boolean(req.headers['x-aegentix-edge-worker']),
     timestamp: new Date().toISOString(),
   });
 });
 
-// Mount Swarm 1, 2 & 3 Modular API Routers
+// Mount Modular API Routers
+app.use('/api/auth/session', authSessionRouter);
+app.use('/api/nanotransactions', nanotransactionRewardsRouter);
+app.use(['/api/rpc/research', '/api/stardusk-research'], starduskResearchBridgeRouter);
+app.use(['/api/stardusk', '/api/stardust'], stardustMcpRouter);
+app.use('/api/openplanter', openPlanterStudioRouter);
 app.use('/api/edge-worker', createEdgeWorkerRouter());
 app.use('/api/championship', createChampionshipRouter());
 app.use('/api/bot-hq', botHqRouter);

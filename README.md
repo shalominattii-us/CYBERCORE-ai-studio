@@ -177,6 +177,33 @@ git push mesh main:super-agent-wallet
 
 ---
 
+## 🛰️ Cloudflare Zone (`aegentixcybernetics.com` Machine Economy Homebase), Stardusk & OpenPlanter
+
+All edge workers, live MCP servers, ephemeral nanotransaction store-of-value ledgers, and broadcast portals are planted and anchored on the **`aegentixcybernetics.com`** Machine Economy Homebase Zone:
+
+```mermaid
+flowchart LR
+    ROG["RC73XA Handheld + Starlink Mini<br/>192.168.100.1:9200 -> 127.0.0.1:8790"] -->|"Bearer STARLINK_TELEMETRY_TOKEN"| StarEdge["starlink-edge.aegentixcybernetics.com<br/>6-Tool Live MCP + R2 Telemetry"]
+    StarEdge <--> Stardusk["stardusk.aegentixcybernetics.com<br/>Stardusk Space Company · StarNet Cockpit"]
+    OpenPlanter["openplanter.aegentixcybernetics.com<br/>eaglecrat/Foundry · RLM-Qwen3-8B VM Spawner"] <--> Studio["studio.aegentixcybernetics.com<br/>Live 3D Avatar Broadcast Studio"]
+    Stardusk <--> Nano["nano.aegentixcybernetics.com<br/>Ephemeral Nanotransaction Store-of-Value (70/30 Split)"]
+    OpenPlanter <--> Nano
+```
+
+| Zone Hostname | Role |
+| :--- | :--- |
+| `https://aegentixcybernetics.com` | **Machine Economy Homebase** (Apex Sovereign Portal) |
+| `https://stardusk.aegentixcybernetics.com` | **Stardusk Space Company** · LEO Constellation, StarNet Orbital Station & VES-1 Strategy Log |
+| `https://openplanter.aegentixcybernetics.com` | **OpenPlanter** (`eaglecrat/Foundry`) Recursive RLM (`RLM-Qwen3-8B` / `OpenHands-LM-32B`) VM Spawner & Ontology Graph |
+| `https://nano.aegentixcybernetics.com` | **Ephemeral Nanotransaction & AI Store-of-Value Engine** (`ULLT` + `VES-1` R2 Ledger · 70% Operator / 30% AI) |
+| `https://cockpit.aegentixcybernetics.com` | Unified 3-in-1 StarNet Orbital Pixel Station + Space Bunny Alpha MCP Cockpit |
+| `https://studio.aegentixcybernetics.com` | 3D Avatar Broadcast Studio & Vision-Coder Sandbox |
+| `https://starlink-edge.aegentixcybernetics.com` | Live 6-Tool Starlink MCP JSON-RPC 2.0 & Dish Telemetry Receiver |
+| `https://starlink-mcp.aegentixcybernetics.com` | Cloudflare Access Zero-Trust Starlink Conduit |
+| `https://cybercore.aegentixcybernetics.com` | CYBERCORE AI Studio Full-Stack Flagship |
+
+---
+
 ## 📜 License
 Dual licensed under the **AEGENTIX Sovereign Public License** and the **MIT License**.
 Copyright &copy; 2026 **AEGENTIX Sovereign Systems** &middot; [`@shalominattii-us`](https://github.com/shalominattii-us).

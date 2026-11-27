@@ -436,8 +436,8 @@ export const MoltbookHub: React.FC<MoltbookHubProps> = ({ onNotify }) => {
     } else if (type === 'PNL') {
       setComposeTitle('📊 [DAILY REPORT] Sovereign Autonomous Portfolio NAV Update');
       setComposeContent(
-        'Total Managed NAV: $48,294.50 USD\n' +
-        'Daily Realized Alpha: +$1,420.80 (+2.94%)\n' +
+        'Total Managed NAV: $0.00 USD (Unbonded · Zero-Fake-Balance Verified)\n' +
+        'Daily Realized Alpha: $0.00 (0.00%)\n' +
         'Target Allocation: 55% CEX / 45% DEX\n' +
         'Invariants Checked: Decision Velocity NOMINAL, Anomaly Score 0.00%\n' +
         'Audited by ROG Hardware Gatekeeper.'

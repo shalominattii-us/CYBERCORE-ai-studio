@@ -1,359 +1,169 @@
-# Sovereign System - One-Click Deployment Guide
+# Aegentix Cybernetics — Sovereign Cloud & Off-Device Production Runbook
 
-**Version:** 1.0.0  
-**Target:** Manusspace (Manus Cloud Infrastructure)  
-**Status:** Production-Ready
-
----
-
-## 🚀 Quick Start - Local Development
-
-### Prerequisites
-- Docker & Docker Compose (v2.0+)
-- Git
-- 8GB RAM minimum
-- 20GB disk space
-
-### One-Command Startup
-
-```bash
-# Clone the repository
-git clone https://github.com/shalominattii-us/Sovereign-System.git
-cd Sovereign-System/sovereign-system-portal
-
-# Start entire stack
-docker-compose up -d
-
-# Verify all services are running
-docker-compose ps
-
-# View logs
-docker-compose logs -f
-```
-
-### Access Points
-
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **Portal** | http://localhost:5173 | - |
-| **Kernel API** | http://localhost:9999 | - |
-| **Grafana** | http://localhost:3000 | admin/admin |
-| **Kibana** | http://localhost:5601 | - |
-| **Prometheus** | http://localhost:9090 | - |
-| **PostgreSQL** | localhost:5432 | sovereign/sovereign_pass |
-| **Redis** | localhost:6379 | - |
-| **SpiderFoot** | http://localhost:5001 | - |
-| **PhoneInfoga** | http://localhost:8080 | - |
+**Platform:** `CYBERCORE-ai-studio` (Stardusk Sovereign Cockpit & Multi-Domain OS)  
+**Architecture:** Zero-Install Browser Static Edge + Cloudflare 6-Tool MCP + Railway/Render Hardened Containers  
+**Runtime Compliance:** Node.js 22 Alpine (Non-Root NIST SP 800-190) · Zero-Fake-Balance Gate Enforced
 
 ---
 
-## 🛑 Stop Services
+## 1. Live Off-Device Sovereign Architecture
 
-```bash
-# Stop all services
-docker-compose down
+```mermaid
+flowchart LR
+  subgraph Field["Field Edge (ASUS ROG Ally X)"]
+    ROG["RC73XA Handheld"]
+    DISH["Starlink Mini Dish (192.168.100.1:9200)"]
+    ROG <-->|"Local gRPC / HTTP Poll"| DISH
+  end
 
-# Stop and remove volumes (WARNING: deletes data)
-docker-compose down -v
+  subgraph CF["Cloudflare Global Edge"]
+    EDGE["starlink-edge.aegentixcybernetics.com (6-Tool MCP Worker)"]
+    R2["Cloudflare R2 (space-bunny-alpha) + 1m Cron"]
+    EDGE <--> R2
+  end
+
+  subgraph Cloud["Railway Sovereign Cloud (aegentix-sovereign-cloud)"]
+    GW["Sovereign Gateway"]
+    PG["Postgres 18"]
+    RD["Redis 8.2"]
+    QD["Qdrant Vector Store"]
+    GW <--> PG
+    GW <--> RD
+    GW <--> QD
+  end
+
+  subgraph Studio["CYBERCORE-ai-studio (Stardusk Cockpit)"]
+    GHP["GitHub Pages Static Cockpit"]
+    CTR["Railway / Render Docker Runtime (:3000)"]
+  end
+
+  ROG -->|"Bearer STARLINK_TELEMETRY_TOKEN"| EDGE
+  EDGE <-->|"Telemetry & MCP Sync"| GW
+  EDGE <-->|"Live Dish & Edge State"| GHP
+  GW <-->|"RAILWAY_GATEWAY_URL"| CTR
+  EDGE <-->|"STARLINK_EDGE_URL"| CTR
 ```
 
 ---
 
-## 📊 Health Checks
+## 2. Zero-Install Browser Access (GitHub Pages)
+
+Every push to `main` builds and publishes the static Stardusk Sovereign Cockpit via `.github/workflows/deploy-github-pages.yml` (`npx vite build --base=/CYBERCORE-ai-studio/`). No local install or workstation daemon is required to inspect live edge telemetry:
+
+| Cockpit Surface | Live GitHub Pages Route | Purpose |
+| :--- | :--- | :--- |
+| **Primary Sovereign App** | `https://shalominattii-us.github.io/CYBERCORE-ai-studio/` | Main React 19 Sovereign OS Suite & Stardusk Command |
+| **Stardusk Standalone Deck** | `https://shalominattii-us.github.io/CYBERCORE-ai-studio/stardusk.html` | Lightweight zero-bundle Stardusk telemetry & Dish HUD |
+| **Aegentix Tactical Cockpit** | `https://shalominattii-us.github.io/CYBERCORE-ai-studio/aegentix-cockpit/index.html` | Autonomous swarm & multi-agent tactical control room |
+| **Studio Production Console** | `https://shalominattii-us.github.io/CYBERCORE-ai-studio/studio.html` | Sovereign audio/media & broadcast engineering surface |
+
+---
+
+## 3. Off-Device Backend Deployment (Railway, Render & Cloudflare)
+
+The repository ships declarative container manifests targeting the multi-stage hardened `Dockerfile` (`CMD ["node", "dist/server.js"]`, `EXPOSE 3000 7777`, `/health` probe).
+
+### A. Railway (`railway.json`)
+
+`railway.json` configures the `DOCKERFILE` builder with `/health` readiness checks (`healthcheckTimeout: 30`) and `ON_FAILURE` auto-recovery (`restartPolicyMaxRetries: 5`).
 
 ```bash
-# Check all services
-docker-compose ps
+# Link to the existing aegentix-sovereign-cloud project and deploy off-device
+railway link
+railway up --detach
+```
 
-# Check specific service logs
-docker-compose logs sovereign-kernel
-docker-compose logs portal
+### B. Render Blueprint (`render.yaml`)
 
-# Test Portal health
-curl http://localhost:5173
+`render.yaml` provisions the `aegentix-cybercore-studio` Docker web service pre-wired with:
+- `NODE_ENV=production`
+- `STARLINK_EDGE_URL=https://starlink-edge.aegentixcybernetics.com`
+- `RAILWAY_GATEWAY_URL=https://aegentix-sovereign-gateway-production.up.railway.app`
 
-# Test Kernel health
-curl http://localhost:9999/health
+To deploy via Render Blueprints:
+1. Open the Render Dashboard → **New +** → **Blueprint**.
+2. Connect `shalominattii-us/CYBERCORE-ai-studio` (`main` branch); Render automatically detects `render.yaml` and deploys on every commit.
 
-# Test Database
-docker-compose exec postgres pg_isready -U sovereign
+### C. Cloudflare 6-Tool MCP Worker Secrets
 
-# Test Redis
-docker-compose exec redis redis-cli ping
+`.github/workflows/deploy-cloudflare-worker.yml` deploys `cloudflare-worker/` via Wrangler when repository secrets are configured. Never hardcode tokens in `wrangler.toml` or commit `.env` files.
+
+Configure GitHub Actions repository secrets:
+- `CLOUDFLARE_API_TOKEN` — Scoped Cloudflare Workers + R2 deploy token
+- `CLOUDFLARE_ACCOUNT_ID` — Target Cloudflare Account ID
+
+Bind the runtime telemetry ingestion secret directly to the Worker via Wrangler stdin/prompt (token-safe, never echoed in shell history):
+
+```bash
+cd cloudflare-worker
+npx wrangler secret put STARLINK_TELEMETRY_TOKEN
 ```
 
 ---
 
-## 🔧 Configuration
+## 4. ROG `RC73XA` Starlink Mini Dish Bridge (Token-Safe Operation)
 
-### Environment Variables
+When operating on the physical **ASUS ROG Ally X (`RC73XA`)** connected to the **Starlink Mini (`192.168.100.1:9200`)**, forward real-time dish metrics to `https://starlink-edge.aegentixcybernetics.com` using environment-scoped credentials only.
 
-Create `.env` file in project root:
+> [!IMPORTANT]
+> Never pass `STARLINK_TELEMETRY_TOKEN` inline as a plaintext CLI flag in shared terminals, transcripts, or chat logs. Read it from an interactive masked prompt or user-scoped environment variable.
 
-```env
-# Database
-DATABASE_URL=postgresql://sovereign:sovereign_pass@postgres:5432/sovereign
+### PowerShell Forwarder (`public/rog-starlink-forwarder.ps1`)
 
-# Redis
-REDIS_URL=redis://redis:6379/0
+```powershell
+# Prompt securely in memory without echoing token to console or logs
+$sec = Read-Host "Enter STARLINK_TELEMETRY_TOKEN" -AsSecureString
+$env:STARLINK_TELEMETRY_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+  [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+)
+$env:STARLINK_EDGE_URL = "https://starlink-edge.aegentixcybernetics.com"
 
-# Portal
-VITE_API_URL=http://localhost:9999
-VITE_APP_TITLE=Sovereign System Portal
+# Single telemetry snapshot verification (-Once)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\public\rog-starlink-forwarder.ps1 -Once
 
-# Kernel
-LOG_LEVEL=INFO
-ENVIRONMENT=development
+# Continuous streaming bridge from 192.168.100.1:9200 (-Watch)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\public\rog-starlink-forwarder.ps1 -Watch
 ```
 
-### Modify Docker Compose
-
-Edit `docker-compose.yml` to:
-- Change port mappings
-- Adjust resource limits
-- Add/remove services
-- Configure volumes
-
----
-
-## 📈 Scaling
-
-### Add More Replicas
+### Cross-Platform Node.js Forwarder (`scripts/rog-starlink-forwarder.mjs`)
 
 ```bash
-# Scale kernel service to 3 replicas
-docker-compose up -d --scale sovereign-kernel=3
+# Read token silently into session environment (POSIX / Git Bash / WSL2)
+read -rsp "STARLINK_TELEMETRY_TOKEN: " STARLINK_TELEMETRY_TOKEN && echo
+export STARLINK_TELEMETRY_TOKEN
+export STARLINK_EDGE_URL="https://starlink-edge.aegentixcybernetics.com"
 
-# Scale portal to 2 replicas
-docker-compose up -d --scale portal=2
-```
+# Single dish probe & edge push (-Once)
+node scripts/rog-starlink-forwarder.mjs -Once
 
-### Resource Limits
-
-Edit `docker-compose.yml`:
-
-```yaml
-services:
-  sovereign-kernel:
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 1G
+# Continuous background dish telemetry forwarder (-Watch)
+node scripts/rog-starlink-forwarder.mjs -Watch
 ```
 
 ---
 
-## 🔍 Monitoring
+## 5. Verification & CI Gates
 
-### View Metrics
-
-1. Open Grafana: http://localhost:3000
-2. Login: admin/admin
-3. Add Prometheus data source: http://prometheus:9090
-4. Create dashboards
-
-### View Logs
-
-1. Open Kibana: http://localhost:5601
-2. Create index pattern: `logs-*`
-3. View logs in Discover
-
-### Real-Time Logs
+Before promoting any release or merging into `main`, run the three deterministic verification gates locally (mirrored in `.github/workflows/production-smoke-and-zero-fake-gate.yml`):
 
 ```bash
-# Follow all logs
-docker-compose logs -f
+# 1. Zero-Fake-Balance Audit Gate
+# Scans src/ and public/ for banned legacy mock balances and writes SHA-256 manifest proof to:
+# artifacts/verification/zero-fake-balance-audit.json
+node scripts/verify-zero-fake-balance.mjs
 
-# Follow specific service
-docker-compose logs -f sovereign-kernel
+# 2. Strict TypeScript Compiler Gate (tsc --noEmit)
+npm run lint
 
-# Last 100 lines
-docker-compose logs --tail=100
+# 3. Full Production Bundle (Vite Client + esbuild Server -> dist/server.js)
+npm run build
 ```
 
----
-
-## 🐛 Troubleshooting
-
-### Service Won't Start
+### Container Smoke Test (Optional Local Parity Check)
 
 ```bash
-# Check logs
-docker-compose logs <service-name>
-
-# Rebuild image
-docker-compose build --no-cache <service-name>
-
-# Restart service
-docker-compose restart <service-name>
+docker build -t aegentix-cybercore-studio:prod .
+docker run --rm -p 3000:3000 -e NODE_ENV=production aegentix-cybercore-studio:prod
+# Probe readiness in a second terminal:
+curl -fsS http://127.0.0.1:3000/health
 ```
-
-### Port Already in Use
-
-```bash
-# Find what's using the port
-lsof -i :5173
-
-# Change port in docker-compose.yml
-# Or kill the process
-kill -9 <PID>
-```
-
-### Database Connection Issues
-
-```bash
-# Check database is running
-docker-compose exec postgres pg_isready -U sovereign
-
-# Check database exists
-docker-compose exec postgres psql -U sovereign -l
-
-# View database logs
-docker-compose logs postgres
-```
-
-### Out of Disk Space
-
-```bash
-# Clean up Docker
-docker system prune -a
-
-# Remove unused volumes
-docker volume prune
-
-# Check disk usage
-docker system df
-```
-
----
-
-## 🚀 Production Deployment
-
-### Deploy to Kubernetes
-
-```bash
-# Build images
-docker build -f Dockerfile.portal -t sovereign-portal:1.0.0 .
-docker build -f sovereign-backend/Dockerfile -t sovereign-kernel:1.0.0 ./sovereign-backend
-
-# Push to registry
-docker push sovereign-portal:1.0.0
-docker push sovereign-kernel:1.0.0
-
-# Deploy to Kubernetes
-kubectl apply -f k8s/production/
-```
-
-### Deploy with Terraform
-
-```bash
-# Initialize Terraform
-cd terraform/production
-terraform init
-
-# Plan deployment
-terraform plan -var-file=production.tfvars
-
-# Apply deployment
-terraform apply -var-file=production.tfvars
-```
-
-### Deploy to Manusspace
-
-```bash
-# Using Manus CLI
-manus deploy --manifest SOVEREIGN-MANIFEST.json
-
-# Or using GitHub Actions (automatic on push to main)
-git push origin main
-# Watch deployment at: https://github.com/shalominattii-us/Sovereign-System/actions
-```
-
----
-
-## 📋 Deployment Checklist
-
-- [ ] All services running (`docker-compose ps`)
-- [ ] Portal accessible (http://localhost:5173)
-- [ ] Kernel API responding (http://localhost:9999/health)
-- [ ] Database initialized (check PostgreSQL)
-- [ ] Redis cache working (redis-cli ping)
-- [ ] Monitoring active (Prometheus, Grafana)
-- [ ] Logs aggregating (Kibana)
-- [ ] OSINT services running (SpiderFoot, PhoneInfoga)
-
----
-
-## 🔐 Security Notes
-
-### Development Only
-- Default credentials (admin/admin)
-- No authentication enabled
-- Insecure environment variables
-
-### Before Production
-- [ ] Change all default passwords
-- [ ] Enable authentication
-- [ ] Use secrets management (Vault, AWS Secrets Manager)
-- [ ] Configure network policies
-- [ ] Enable SSL/TLS
-- [ ] Set up firewall rules
-- [ ] Enable audit logging
-
----
-
-## 📚 Additional Resources
-
-- [Full Deployment Architecture](./DEPLOYMENT_ARCHITECTURE.md)
-- [Docker Compose Reference](./docs/docker-compose.md)
-- [Kubernetes Deployment](./docs/kubernetes.md)
-- [Terraform Configuration](./docs/terraform.md)
-- [API Integration Guide](./docs/api-integration.md)
-- [Monitoring & Logging](./docs/monitoring.md)
-
----
-
-## 🆘 Support
-
-### Get Help
-
-```bash
-# View service logs
-docker-compose logs <service-name>
-
-# Check service status
-docker-compose ps
-
-# Inspect running container
-docker-compose exec <service-name> sh
-
-# Check network connectivity
-docker-compose exec <service-name> ping <other-service>
-```
-
-### Common Issues
-
-**Q: Portal won't connect to Kernel**
-- A: Check `VITE_API_URL` environment variable
-- A: Verify kernel is running: `docker-compose ps sovereign-kernel`
-- A: Check network: `docker-compose exec portal ping sovereign-kernel`
-
-**Q: Database migration failed**
-- A: Check logs: `docker-compose logs postgres`
-- A: Verify database exists: `docker-compose exec postgres psql -U sovereign -l`
-- A: Reinitialize: `docker-compose down -v && docker-compose up`
-
-**Q: Out of memory errors**
-- A: Increase Docker memory allocation
-- A: Scale down replicas
-- A: Check memory usage: `docker stats`
-
----
-
-**Status:** 🟢 **READY FOR PRODUCTION**
-
-For questions, open an issue on GitHub or contact the DevOps team.

@@ -72,6 +72,8 @@ import { EagleShieldQuantumSuite } from './components/EagleShieldQuantumSuite';
 import { SovereignOsCommandSuite } from './components/SovereignOsCommandSuite';
 import { EagleShieldVibeLabSuite } from './components/EagleShieldVibeLabSuite';
 import { PrismSwarmSuite } from './components/PrismSwarmSuite';
+import { StardustCockpitSuite } from './components/StardustCockpitSuite';
+import { OpenPlanterStudioSuite } from './components/OpenPlanterStudioSuite';
 import { 
   WalletBalances, 
   MarketAsset, 
@@ -286,6 +288,19 @@ export default function App() {
       'rwb7': 'XAMAN_REVENUE_BRIDGE',
       'xumm': 'XAMAN_REVENUE_BRIDGE',
       'xaman_revenue_bridge': 'XAMAN_REVENUE_BRIDGE',
+      'stardusk': 'STARDUST_COCKPIT',
+      'stardusk_space': 'STARDUST_COCKPIT',
+      'stardust': 'STARDUST_COCKPIT',
+      'starlink': 'STARDUST_COCKPIT',
+      'starnet': 'STARDUST_COCKPIT',
+      'cockpit': 'STARDUST_COCKPIT',
+      'stardust_cockpit': 'STARDUST_COCKPIT',
+      'openplanter': 'OPENPLANTER_STUDIO',
+      'open-planter': 'OPENPLANTER_STUDIO',
+      'open_planter': 'OPENPLANTER_STUDIO',
+      'foundry': 'OPENPLANTER_STUDIO',
+      'rlm': 'OPENPLANTER_STUDIO',
+      'openplanter_studio': 'OPENPLANTER_STUDIO',
     };
     if (aliasMap[clean]) return aliasMap[clean];
     const upper = clean.toUpperCase();
@@ -294,13 +309,19 @@ export default function App() {
 
   const getInitialTab = () => {
     try {
+      const host = window.location.hostname.toLowerCase();
+      if (host.startsWith('openplanter.')) return 'OPENPLANTER_STUDIO';
+      if (host.startsWith('stardusk.') || host.startsWith('stardust.') || host.startsWith('cockpit.')) return 'STARDUST_COCKPIT';
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = resolveTabFromInput(params.get('tab'));
+      if (fromQuery) return fromQuery;
       const fromHash = resolveTabFromInput(window.location.hash);
       if (fromHash) return fromHash;
     } catch {}
-    return 'COINBASE_CHAMPIONSHIP';
+    return 'STARDUST_COCKPIT';
   };
 
-  const [centerTab, setCenterTabState] = useState<'PRISM_SWARM' | 'VIBE_CODE_LAB' | 'COINBASE_CHAMPIONSHIP' | 'WAVE_SURFER_TREASURY' | 'EAGLE_SHIELD_QUANTUM' | 'SOVEREIGN_OS_CORE' | 'BOT_HQ' | 'CLOUDFLARE_EDGE_WORKER' | 'COMPLIANCE_AUDIT_CHAIN' | 'MT5_MOBILE_EA' | 'ALPACA_MCP_BOT' | 'FORMAL_VERIFICATION' | 'AI_ECOSYSTEM_HUB' | 'PORTAL_LANDING' | 'JARVIS_BUILDER' | 'LIVE_TELEMETRY' | 'AEGENTIS_OS' | 'HERDR' | 'ROG_CREATOR_SYSTEM' | 'DEVICE_SANDBOX_MAPPING' | 'CYBERNETICS' | 'AEGIS_CIPHER' | 'ENDPOINT_SECURITY' | 'OODA_LOOP' | 'TOP_SIGNALS' | 'SYMPHONY' | 'AGENT_MESH' | 'AUTOHEDGE' | 'RISK_DASHBOARD' | 'GOOGLE_DRIVE' | 'GMAIL' | 'HEATMAP' | 'MOLTBOOK' | 'RESEARCHER' | 'META_COGNITIVE' | 'SPACE_BUNNY_ALPHA' | 'ALL_FEEDS' | 'LEDGER' | 'HALO_CE_VISOR' | 'USER_PROFILE_MAP' | 'AGENTS_OF_CHAOS' | 'SOVEREIGN_COMMAND' | 'FAA_SOV_LICENSE' | 'SOVEREIGN_PORTAL' | 'OMNICYBERDEX' | 'HEALTHCARE_NET' | 'FEDERAL_CRYPTO' | 'PINNACLE_DERIVATIVES' | 'TRADING_COMMAND' | 'PORTFOLIO_GROWTH_PLAN' | 'DAG_FEDERAL_NODE_STATUS' | 'GOV_OPPORTUNITIES' | 'AGENTIC_AMERICA' | 'CYBERGYM_PROGRESSION' | 'GITHUB_FORGE' | 'KOLIBRI_PLATFORM' | 'NEXUS_REGISTRY' | 'ZERO_CAP_FLYWHEEL' | 'SOVEREIGN_ORIGIN_NODE' | 'ANTI_TRAFFICKING_SENTINEL' | 'XAMAN_REVENUE_BRIDGE'>(getInitialTab);
+  const [centerTab, setCenterTabState] = useState<'STARDUST_COCKPIT' | 'OPENPLANTER_STUDIO' | 'PRISM_SWARM' | 'VIBE_CODE_LAB' | 'COINBASE_CHAMPIONSHIP' | 'WAVE_SURFER_TREASURY' | 'EAGLE_SHIELD_QUANTUM' | 'SOVEREIGN_OS_CORE' | 'BOT_HQ' | 'CLOUDFLARE_EDGE_WORKER' | 'COMPLIANCE_AUDIT_CHAIN' | 'MT5_MOBILE_EA' | 'ALPACA_MCP_BOT' | 'FORMAL_VERIFICATION' | 'AI_ECOSYSTEM_HUB' | 'PORTAL_LANDING' | 'JARVIS_BUILDER' | 'LIVE_TELEMETRY' | 'AEGENTIS_OS' | 'HERDR' | 'ROG_CREATOR_SYSTEM' | 'DEVICE_SANDBOX_MAPPING' | 'CYBERNETICS' | 'AEGIS_CIPHER' | 'ENDPOINT_SECURITY' | 'OODA_LOOP' | 'TOP_SIGNALS' | 'SYMPHONY' | 'AGENT_MESH' | 'AUTOHEDGE' | 'RISK_DASHBOARD' | 'GOOGLE_DRIVE' | 'GMAIL' | 'HEATMAP' | 'MOLTBOOK' | 'RESEARCHER' | 'META_COGNITIVE' | 'SPACE_BUNNY_ALPHA' | 'ALL_FEEDS' | 'LEDGER' | 'HALO_CE_VISOR' | 'USER_PROFILE_MAP' | 'AGENTS_OF_CHAOS' | 'SOVEREIGN_COMMAND' | 'FAA_SOV_LICENSE' | 'SOVEREIGN_PORTAL' | 'OMNICYBERDEX' | 'HEALTHCARE_NET' | 'FEDERAL_CRYPTO' | 'PINNACLE_DERIVATIVES' | 'TRADING_COMMAND' | 'PORTFOLIO_GROWTH_PLAN' | 'DAG_FEDERAL_NODE_STATUS' | 'GOV_OPPORTUNITIES' | 'AGENTIC_AMERICA' | 'CYBERGYM_PROGRESSION' | 'GITHUB_FORGE' | 'KOLIBRI_PLATFORM' | 'NEXUS_REGISTRY' | 'ZERO_CAP_FLYWHEEL' | 'SOVEREIGN_ORIGIN_NODE' | 'ANTI_TRAFFICKING_SENTINEL' | 'XAMAN_REVENUE_BRIDGE'>(getInitialTab);
 
   useEffect(() => {
     const onRouteJarvis = () => setCenterTab('JARVIS_BUILDER');
@@ -676,6 +697,8 @@ export default function App() {
   };
 
   const isOutwardPortalMode = [
+    'STARDUST_COCKPIT',
+    'OPENPLANTER_STUDIO',
     'PRISM_SWARM',
     'VIBE_CODE_LAB',
     'COINBASE_CHAMPIONSHIP',
@@ -923,6 +946,16 @@ export default function App() {
             {/* TAB CONTENT: Eagle Shield Live Vibe-Code Studio & Render Lab */}
             {centerTab === 'VIBE_CODE_LAB' && (
               <EagleShieldVibeLabSuite />
+            )}
+
+            {/* TAB CONTENT: Stardust 3-in-1 StarNet Orbital Cockpit & Satellite-Strategy-Log Ecosystem */}
+            {centerTab === 'STARDUST_COCKPIT' && (
+              <StardustCockpitSuite />
+            )}
+
+            {/* TAB CONTENT: OpenPlanter RLM Recursive VM Spawner & Live 3D Avatar Broadcast Studio */}
+            {centerTab === 'OPENPLANTER_STUDIO' && (
+              <OpenPlanterStudioSuite />
             )}
 
             {/* TAB CONTENT: Prism Swarm 4-Stage Multi-Agent Orchestrator */}

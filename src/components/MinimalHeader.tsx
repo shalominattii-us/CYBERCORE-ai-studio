@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SovereignSeal } from './SovereignSeal';
 import { AuthIndicator } from './AuthIndicator';
+import { ZoneNanoRewardBadge } from './ZoneNanoRewardBadge';
 
 interface MinimalHeaderProps {
   currentTab: string;
@@ -29,6 +30,8 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
   gasTankUsd,
 }) => {
   const primaryNavItems = [
+    { id: 'STARDUST_COCKPIT', label: 'Stardusk', tag: 'Space·AS14593' },
+    { id: 'OPENPLANTER_STUDIO', label: 'OpenPlanter', tag: 'RLM·VM' },
     { id: 'PRISM_SWARM', label: 'Prism Swarm', tag: '4-Stage' },
     { id: 'VIBE_CODE_LAB', label: 'Vibe Lab', tag: 'Live' },
     { id: 'COINBASE_CHAMPIONSHIP', label: 'Championship', tag: 'Rank #1' },
@@ -51,7 +54,7 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Brand Anchor */}
         <div 
-          onClick={() => onSelectTab('COINBASE_CHAMPIONSHIP')}
+          onClick={() => onSelectTab('STARDUST_COCKPIT')}
           className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
         >
           <div className="w-8 h-8 rounded-lg bg-[#0D121B] border border-white/[0.08] flex items-center justify-center group-hover:border-emerald-500/40 transition-colors">
@@ -60,7 +63,7 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm tracking-tight text-white">AEGENTIX</span>
             <span className="hidden xl:inline-block text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-              Championship Desk
+              Machine Economy Zone
             </span>
           </div>
         </div>
@@ -94,6 +97,7 @@ export const MinimalHeader: React.FC<MinimalHeaderProps> = ({
 
         {/* Right Status Indicator */}
         <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+          <ZoneNanoRewardBadge />
           <AuthIndicator />
           <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0D121B] border border-white/[0.06] text-zinc-400 tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

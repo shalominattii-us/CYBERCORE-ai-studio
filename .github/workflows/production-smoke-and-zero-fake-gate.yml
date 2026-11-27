@@ -23,13 +23,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Enforce Zero-Fake-Balance Invariant
-        run: |
-          if grep -rnE "48294\.50|26102\.50|22192\.00" src/; then
-            echo "ERROR: Legacy hardcoded fake balance detected in src/!"
-            exit 1
-          fi
-          echo "PASS: Zero legacy fake balances in src/"
+      - name: Enforce Zero-Fake-Balance Invariant (Full Repo Audit Script)
+        run: node scripts/verify-zero-fake-balance.mjs
+
+      - name: Upload Zero-Fake-Balance Audit Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zero-fake-balance-audit
+          path: artifacts/verification/zero-fake-balance-audit.json
 
       - name: Install dependencies
         run: npm install --allow-git=all
@@ -45,7 +46,27 @@ jobs:
           NODE_ENV=production PORT=3099 node server.ts > /tmp/ci_server.log 2>&1 &
           SRV_PID=$!
           sleep 3
-          for ep in /health /api/domain/status /api/championship/status /api/edge-worker/status /api/formal-verify/status /api/wave-surfer/status /api/eagle-shield/status /api/sovereign-os/status; do
+          for ep in \
+            /health \
+            /api/domain/status \
+            /api/auth/session/status \
+            /api/nanotransactions/status \
+            /api/rpc/research/contract \
+            /stardusk-bridge/contract.json \
+            /api/stardusk/overview \
+            /api/stardusk/logs \
+            /api/stardusk/rog-bridge \
+            /api/openplanter/status \
+            /api/prism-swarm/status \
+            /api/championship/status \
+            /api/edge-worker/status \
+            /api/formal-verify/status \
+            /api/wave-surfer/status \
+            /api/eagle-shield/status \
+            /api/sovereign-os/status \
+            /stardusk.html \
+            /stardust.html \
+            /aegentix-cockpit/index.html; do
             CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3099${ep}")
             echo "${ep} -> HTTP ${CODE}"
             if [ "$CODE" != "200" ]; then
@@ -55,4 +76,4 @@ jobs:
             fi
           done
           kill $SRV_PID 2>/dev/null || true
-          echo "PASS: All 8 production endpoints returned HTTP 200 OK"
+          echo "PASS: All 18 production endpoints & Stardusk Space Company decks returned HTTP 200 OK"

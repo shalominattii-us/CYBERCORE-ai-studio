@@ -2564,7 +2564,7 @@ Write-Host "==============================================================" -For
             {/* Live Interactive Attestation Trigger */}
             <div className="p-3 bg-slate-950/80 rounded-lg border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="text-[11px] text-slate-300 space-y-0.5">
-                <div>Guarded Treasury: <b className="text-emerald-400">${data?.layers?.immutableLedger ? '48,294.50' : '48,294.50'} USD</b></div>
+                <div>Guarded Treasury: <b className="text-emerald-400">${data?.layers?.immutableLedger ? '0.00' : '0.00'} USD (Unbonded)</b></div>
                 <div>Custody Compliance Rate: <b className="text-emerald-400">100.0% Audited</b> &middot; Zero Slashing Events</div>
               </div>
 
@@ -3807,11 +3807,11 @@ Write-Host "==============================================================" -For
                 Real-Time NAV (USD) &middot; aegentix_nav_usd
               </span>
               <div className="text-2xl font-black text-emerald-400 font-mono">
-                ${oseData?.telemetry?.aegentix_nav_usd ? oseData.telemetry.aegentix_nav_usd.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '48,294.50'}
+                ${oseData?.telemetry?.aegentix_nav_usd ? oseData.telemetry.aegentix_nav_usd.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-                <span>Consolidated Net Worth</span>
-                <span className="text-emerald-300 font-semibold font-mono">+2.94% 24h</span>
+                <span>Consolidated Net Worth (Unbonded)</span>
+                <span className="text-emerald-300 font-semibold font-mono">0.00% 24h</span>
               </div>
             </div>
 
