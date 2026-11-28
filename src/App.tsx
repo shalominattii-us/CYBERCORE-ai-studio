@@ -310,7 +310,7 @@ export default function App() {
   const getInitialTab = () => {
     try {
       const host = window.location.hostname.toLowerCase();
-      if (host.startsWith('openplanter.')) return 'OPENPLANTER_STUDIO';
+      if (host.startsWith('openplanter.') || host.startsWith('studio.')) return 'OPENPLANTER_STUDIO';
       if (host.startsWith('stardusk.') || host.startsWith('stardust.') || host.startsWith('cockpit.')) return 'STARDUST_COCKPIT';
       const params = new URLSearchParams(window.location.search);
       const fromQuery = resolveTabFromInput(params.get('tab'));

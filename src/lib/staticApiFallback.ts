@@ -1536,119 +1536,24 @@ async function handleStaticApi(
     });
   }
 
-  if (pathname === '/api/rpc/research/state') {
-    const w = window as unknown as { __starduskState?: any };
-    if (!w.__starduskState) {
-      w.__starduskState = {
-        records: [
-          {
-            recordId: 'sdr-ws1-orbital-001',
-            moduleId: 'sovereign.research.orbital',
-            externalId: 'ws1-orbital-materials-bus-req-001',
-            kind: 'requirement',
-            title: 'Workstream 1: Uncrewed Free-Flyer Microgravity Materials & Hardware Testbed Envelope',
-            summary: 'Defines mass, continuous power, vibration isolation, and LEO Ka/Starlink telemetry budgets for Stardusk uncrewed payloads.',
-            category: 'Orbital Lab System Architecture',
-            researchedAt: '2026-11-26T18:00:00Z',
-            sources: [{ url: 'https://www.nasa.gov/smallsat-institute/sst-soa/', title: 'NASA SmallSat SOA Report', publishedAt: '2026-02-01T00:00:00Z' }],
-            evidence: 'Source-backed',
-            assumptions: ['Proposed uncrewed orbital lab venture, not yet flight-operational.'],
-            unresolvedQuestions: ['Sample-return capsule vs in-situ telemetry characterization?'],
-            detail: 'Prioritizes semiconductor crystal growth and space hardware radiation/thermal testing.',
-            currentStatus: 'Needs analysis',
-            receivedAt: now,
-            updatedAt: now,
-          },
-          {
-            recordId: 'sdr-ws2-funding-001',
-            moduleId: 'sovereign.research.orbital',
-            externalId: 'ws2-funding-nasa-sbir-nsf-001',
-            kind: 'funding',
-            title: 'Workstream 2: Non-Dilutive R&D Pipeline — NASA SBIR/STTR & NSF Seed Fund',
-            summary: 'Verified primary U.S. non-dilutive R&D programs supporting commercial LEO microgravity instrumentation and autonomous payload ops.',
-            category: 'Grants & Non-Dilutive Funding',
-            researchedAt: '2026-11-26T18:05:00Z',
-            sources: [{ url: 'https://sbir.nasa.gov/', title: 'NASA SBIR/STTR Program', publishedAt: null }],
-            evidence: 'Source-backed',
-            assumptions: ['Provisional U.S. small business incorporation planning assumption; status unverified.'],
-            unresolvedQuestions: ['Confirm SAM.gov UEI & PI primary employment eligibility.'],
-            detail: 'Eligibility and active solicitation windows must be verified before external submission.',
-            currentStatus: 'Verify eligibility',
-            receivedAt: now,
-            updatedAt: now,
-          },
-        ],
-        decisions: [],
-        credentials: [],
-      };
-    }
-    return jsonRes({
-      ok: true,
-      schemaVersion: '1.0',
-      zone: 'aegentixcybernetics.com',
-      ...w.__starduskState,
-      exportBriefV1: {
-        schemaVersion: '1.0',
-        moduleId: 'sovereign.research.orbital',
-        findings: w.__starduskState.records.map((r: any) => ({
-          externalId: r.externalId,
-          kind: r.kind,
-          title: r.title,
-          summary: r.summary,
-          category: r.category,
-          researchedAt: r.researchedAt,
-          sources: r.sources,
-          evidence: r.evidence,
-          assumptions: r.assumptions,
-          unresolvedQuestions: r.unresolvedQuestions,
-          detail: r.detail,
-        })),
+  if (
+    pathname === '/api/rpc/research/state' ||
+    pathname === '/api/rpc/research/tokens' ||
+    pathname === '/api/rpc/research/tokens/revoke' ||
+    pathname === '/api/rpc/research/review' ||
+    pathname === '/api/rpc/research/sync-remote' ||
+    pathname === '/api/stardusk-desk/feed' ||
+    pathname === '/api/stardusk-desk/health'
+  ) {
+    return jsonRes(
+      {
+        ok: false,
+        error: 'STUDIO_SESSION_REQUIRED',
+        detail:
+          'These routes require the authenticated studio server. The static fallback does not mint a module token, review a record, or sync remotely.',
       },
-      timestamp: now,
-    });
-  }
-
-  if (pathname === '/api/rpc/research/tokens' && method === 'POST') {
-    const rand = Array.from(crypto.getRandomValues(new Uint8Array(24)))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    const rawToken = `sdk_${rand}`;
-    const w = window as unknown as { __starduskState?: any };
-    const cred = {
-      credentialId: `cred-${rand.slice(0, 8)}`,
-      label: String(payload.label || 'Runable <-> Sovereign OS Orbital Bridge'),
-      tokenPrefix: rawToken.slice(0, 12),
-      scopes: ['research:ingest', 'decisions:read'],
-      createdAt: now,
-      expiresAt: new Date(Date.now() + 90 * 86400_000).toISOString(),
-      revokedAt: null,
-    };
-    if (w.__starduskState) w.__starduskState.credentials.unshift(cred);
-    return jsonRes({ ok: true, plaintextTokenShownOnce: rawToken, credential: cred });
-  }
-
-  if (pathname === '/api/rpc/research/review' && method === 'POST') {
-    const w = window as unknown as { __starduskState?: any };
-    const st = w.__starduskState;
-    const rec = st?.records?.find((r: any) => r.externalId === payload.externalId);
-    if (rec) {
-      rec.currentStatus = payload.decision || 'Approved internally';
-      rec.updatedAt = now;
-      const dec = {
-        id: `dec-${Date.now().toString(16)}`,
-        recordId: rec.recordId,
-        moduleId: rec.moduleId,
-        externalId: rec.externalId,
-        decision: rec.currentStatus,
-        rationale: payload.rationale || 'Reviewed in Stardusk Portal.',
-        createdAt: now,
-        currentStatus: rec.currentStatus,
-        recordUpdatedAt: now,
-      };
-      st.decisions.unshift(dec);
-      return jsonRes({ ok: true, decision: dec, record: rec });
-    }
-    return jsonRes({ ok: false, error: 'Record not found' }, 404);
+      401
+    );
   }
 
   // Generic safe fallback for any other same-origin /api/* endpoint on static hosts

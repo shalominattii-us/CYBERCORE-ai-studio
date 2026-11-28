@@ -65,6 +65,7 @@ import { openPlanterStudioRouter } from './src/api/openPlanterStudio.ts';
 import { authSessionRouter } from './src/api/authSession.ts';
 import { nanotransactionRewardsRouter } from './src/api/nanotransactionRewards.ts';
 import { starduskResearchBridgeRouter } from './src/api/starduskResearchBridge.ts';
+import { starduskDeskProxyRouter } from './src/api/starduskDeskProxy.ts';
 
 dotenv.config();
 
@@ -218,6 +219,7 @@ app.get('/api/domain/status', (req, res) => {
 app.use('/api/auth/session', authSessionRouter);
 app.use('/api/nanotransactions', nanotransactionRewardsRouter);
 app.use(['/api/rpc/research', '/api/stardusk-research'], starduskResearchBridgeRouter);
+app.use('/api/stardusk-desk', starduskDeskProxyRouter);
 app.use(['/api/stardusk', '/api/stardust'], stardustMcpRouter);
 app.use('/api/openplanter', openPlanterStudioRouter);
 app.use('/api/edge-worker', createEdgeWorkerRouter());
