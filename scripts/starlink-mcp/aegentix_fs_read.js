@@ -27,14 +27,12 @@ const DENY = [/(^|[\\/])\.git([\\/]|$)/i, /(^|[\\/])node_modules([\\/]|$)/i,
   /(^|[\\/])id_(rsa|dsa|ecdsa|ed25519)(\.pub)?([\\/]|$)/i, /(^|[\\/])wallet\.dat([\\/]|$)/i,
   /\.(pem|key|p12|pfx|kdbx|jks|keystore|wallet|seed)$/i,
   /(^|[\\/])\.(ssh|aws|gnupg|cloudflared)([\\/]|$)/i, /cert\.pem$/i];
-// Whole segment or filename stem only, so tokenizer.js stays readable and creds.json does not.
+// Each dot-separated piece of a path segment, so creds.json.backup is blocked and tokenizer.js is not.
 const SECRET_NAME = /^(?:secrets?|credentials?|creds|tokens?|private[-_]?keys?|mnemonics?|passwords?|dpapi|wallets?|seeds?)$/i;
 function secretNamed(rel) {
   return String(rel || '').split(/[\\/]+/).some((segment) => {
     if (!segment || segment === '.' || segment === '..') return false;
-    if (SECRET_NAME.test(segment)) return true;
-    const stem = segment.replace(/\.[^.]+$/, '');
-    return stem !== segment && SECRET_NAME.test(stem);
+    return segment.split('.').some((part) => part && SECRET_NAME.test(part));
   });
 }
 const denied = (rel) => {
