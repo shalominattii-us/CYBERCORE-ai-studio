@@ -200,12 +200,44 @@ function configuredState(): { configured: boolean; originHost: string | null; er
   return { configured: true, originHost };
 }
 
+const SENSITIVE_TOKEN_KEY = /^(module[_-]?token|token|authorization|stardusk[_-]?desk[_-]?token|stardusk[_-]?module[_-]?token)$/i;
+
+function valueCarriesModuleToken(value: unknown, depth = 0): boolean {
+  if (depth > 6) return true;
+  if (typeof value === 'string') {
+    return value.includes('sdk_') || /bearer\s+sdk_/i.test(value);
+  }
+  if (Array.isArray(value)) {
+    return value.some((entry) => valueCarriesModuleToken(entry, depth + 1));
+  }
+  if (value && typeof value === 'object') {
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (SENSITIVE_TOKEN_KEY.test(key) || valueCarriesModuleToken(entry, depth + 1)) return true;
+    }
+  }
+  return false;
+}
+
 function clientSuppliedModuleToken(req: Request): boolean {
-  const queryBlob = JSON.stringify(req.query || {});
-  if (queryBlob.includes('sdk_')) return true;
-  if (!req.body || typeof req.body !== 'object') return false;
-  const body = req.body as Record<string, unknown>;
-  return 'moduleToken' in body || 'token' in body || 'authorization' in body || 'STARDUSK_DESK_TOKEN' in body;
+  const authorization = req.headers.authorization;
+  if (typeof authorization === 'string' && /bearer\s+sdk_/i.test(authorization)) return true;
+  if (Array.isArray(authorization) && authorization.some((value) => /bearer\s+sdk_/i.test(value))) return true;
+  return valueCarriesModuleToken(req.query) || valueCarriesModuleToken(req.body);
+}
+
+class DeskUpstreamError extends Error {
+  readonly code: 'CONTROL_CENTER_REDIRECT_REFUSED' | 'CONTROL_CENTER_INVALID_JSON' | 'CONTROL_CENTER_ERROR';
+  readonly statusCode: number;
+
+  constructor(
+    code: 'CONTROL_CENTER_REDIRECT_REFUSED' | 'CONTROL_CENTER_INVALID_JSON' | 'CONTROL_CENTER_ERROR',
+    statusCode: number
+  ) {
+    super(code);
+    this.name = 'DeskUpstreamError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
 }
 
 async function fetchDecisions(
@@ -231,24 +263,24 @@ async function fetchDecisions(
   });
 
   if (response.status >= 300 && response.status < 400) {
-    throw Object.assign(new Error('CONTROL_CENTER_REDIRECT_REFUSED'), { statusCode: 502 });
+    throw new DeskUpstreamError('CONTROL_CENTER_REDIRECT_REFUSED', 502);
   }
 
   const text = await response.text();
   if (text.length > 1_000_000) {
-    throw Object.assign(new Error('CONTROL_CENTER_INVALID_JSON'), { statusCode: 502 });
+    throw new DeskUpstreamError('CONTROL_CENTER_INVALID_JSON', 502);
   }
   let parsed: unknown = null;
   if (text) {
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw Object.assign(new Error('CONTROL_CENTER_INVALID_JSON'), { statusCode: 502 });
+      throw new DeskUpstreamError('CONTROL_CENTER_INVALID_JSON', 502);
     }
   }
 
   if (!response.ok) {
-    throw Object.assign(new Error('CONTROL_CENTER_ERROR'), { statusCode: 502 });
+    throw new DeskUpstreamError('CONTROL_CENTER_ERROR', 502);
   }
 
   return parseDecisionsPayload(parsed);
@@ -332,6 +364,10 @@ starduskDeskProxyRouter.get('/feed', async (req: Request, res: Response) => {
       nextCursor: result.nextCursor,
     });
   } catch (err) {
+    if (err instanceof DeskUpstreamError) {
+      res.status(err.statusCode).json({ ok: false, error: err.code });
+      return;
+    }
     const aborted = err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError');
     res.status(aborted ? 504 : 502).json({
       ok: false,

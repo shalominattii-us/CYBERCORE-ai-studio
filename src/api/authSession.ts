@@ -289,11 +289,14 @@ function normalizePeerAddress(address: string | undefined): string {
 }
 
 /**
- * dev-open is granted only when the TCP peer is loopback. The Host header,
- * X-Forwarded-Host, and X-Forwarded-For are ignored so a remote client cannot
- * mint a session by claiming to be localhost. A forwarding header also refuses
- * the escape, because a same-machine proxy would otherwise make every client
- * look like 127.0.0.1.
+ * dev-open is granted only when the TCP peer is loopback. The Host header is
+ * intentionally not read: the client sets it, and the socket peer
+ * (req.socket.remoteAddress) is not something the client can choose. Sending
+ * Host: localhost from a remote address does not pass.
+ *
+ * X-Forwarded-For, X-Forwarded-Host, X-Real-IP, and Forwarded refuse the
+ * escape. A proxy that connects from 127.0.0.1 and strips those headers would
+ * still look local, so do not enable dev-open behind a reverse proxy.
  */
 export function isDirectLoopbackPeer(req: Request): boolean {
   if (
@@ -787,7 +790,8 @@ export function requireStudioSession(
     return null;
   }
   const extracted = extractSessionTokenFromRequest(req, false);
-  if (extracted?.token.startsWith('sdk_')) {
+  const presented = extracted?.token;
+  if (typeof presented === 'string' && presented.startsWith('sdk_')) {
     res.status(401).json({ ok: false, error: 'MODULE_TOKEN_NOT_ACCEPTED' });
     return null;
   }
