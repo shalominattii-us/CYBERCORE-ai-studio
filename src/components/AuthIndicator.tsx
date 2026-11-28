@@ -27,6 +27,16 @@ const SESSION_STORAGE_KEY = 'aegentix_session_v2';
 const AUTH_COOKIE_NAME = '__SECURE-aistudio_auth_flow_may_set_cookies';
 const DEFAULT_SCOPES = ['studio:operator', 'stardust:read', 'stardust:control'];
 
+function describeSessionIssueBlock(status: number, errorCode: unknown): string | null {
+  if (errorCode === 'SESSION_ISSUE_LOCKED' || errorCode === 'CLOUDFLARE_ACCESS_UNAVAILABLE' || status === 503) {
+    return 'Studio session minting is locked. Cloudflare Access must sit in front of /api/auth/session, with CLOUDFLARE_ACCESS_TEAM_DOMAIN and CLOUDFLARE_ACCESS_AUD set on the server.';
+  }
+  if (errorCode === 'CLOUDFLARE_ACCESS_REQUIRED' || errorCode === 'CLOUDFLARE_ACCESS_INVALID') {
+    return 'Cloudflare Access did not authorize this browser. Sign in through Access, then retry.';
+  }
+  return null;
+}
+
 function truncateJti(jti: string | null): string {
   if (!jti) return '—';
   if (jti.length <= 16) return jti;
@@ -254,6 +264,15 @@ export const AuthIndicator: React.FC<AuthIndicatorProps> = ({ className = '' }) 
             updateCheckedTimestamp();
             return;
           }
+        } else {
+          const issueError = await issueRes.json().catch(() => ({}));
+          const blocked = describeSessionIssueBlock(issueRes.status, issueError.error);
+          if (blocked) {
+            setSessionStatus('UNAUTHENTICATED');
+            setStatusMessage(blocked);
+            updateCheckedTimestamp();
+            return;
+          }
         }
       } catch {
         // Fallback to legacy /api/auth/status if v2 endpoint unreachable
@@ -310,6 +329,15 @@ export const AuthIndicator: React.FC<AuthIndicatorProps> = ({ className = '' }) 
             setAuthMode(data.mode);
           }
           setStatusMessage(`Issued HMAC-SHA256 session (${truncateJti(data.jti)})`);
+          updateCheckedTimestamp();
+          return;
+        }
+      } else {
+        const issueError = await res.json().catch(() => ({}));
+        const blocked = describeSessionIssueBlock(res.status, issueError.error);
+        if (blocked) {
+          setSessionStatus('UNAUTHENTICATED');
+          setStatusMessage(blocked);
           updateCheckedTimestamp();
           return;
         }

@@ -282,6 +282,202 @@ function extractSessionTokenFromRequest(
   return null;
 }
 
+function normalizePeerAddress(address: string | undefined): string {
+  const raw = (address || '').trim().toLowerCase();
+  if (raw.startsWith('::ffff:')) return raw.slice('::ffff:'.length);
+  return raw;
+}
+
+/**
+ * dev-open is granted only when the TCP peer is loopback. The Host header,
+ * X-Forwarded-Host, and X-Forwarded-For are ignored so a remote client cannot
+ * mint a session by claiming to be localhost. A forwarding header also refuses
+ * the escape, because a same-machine proxy would otherwise make every client
+ * look like 127.0.0.1.
+ */
+export function isDirectLoopbackPeer(req: Request): boolean {
+  if (
+    req.headers['x-forwarded-for'] ||
+    req.headers['x-forwarded-host'] ||
+    req.headers['x-real-ip'] ||
+    req.headers.forwarded
+  ) {
+    return false;
+  }
+  const peer = normalizePeerAddress(req.socket?.remoteAddress);
+  return peer === '127.0.0.1' || peer === '::1';
+}
+
+interface CloudflareAccessConfig {
+  teamDomain: string;
+  aud: string;
+}
+
+interface AccessJwk {
+  kty?: string;
+  kid?: string;
+  n?: string;
+  e?: string;
+  alg?: string;
+  use?: string;
+}
+
+const ACCESS_CERT_TTL_MS = 10 * 60_000;
+const accessCertCache = new Map<string, { expiresAt: number; keys: AccessJwk[] }>();
+
+/**
+ * Public hosts must sit behind Cloudflare Access. Session minting stays
+ * closed until CLOUDFLARE_ACCESS_TEAM_DOMAIN and CLOUDFLARE_ACCESS_AUD are
+ * set and the request carries a verified Cf-Access-Jwt-Assertion.
+ * Loopback-only escape: STUDIO_SESSION_ISSUE_MODE=dev-open, and only when
+ * NODE_ENV is not production and the TCP peer is 127.0.0.1 or ::1.
+ * The Host header is not consulted.
+ */
+function configuredCloudflareAccess(): CloudflareAccessConfig | null {
+  const rawDomain = (process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN || '').trim();
+  const aud = (process.env.CLOUDFLARE_ACCESS_AUD || '').trim();
+  if (!rawDomain || !aud || aud.length > 256 || /\s/.test(aud)) return null;
+
+  let host = rawDomain;
+  if (rawDomain.includes('://')) {
+    try {
+      const parsed = new URL(rawDomain);
+      if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) {
+        return null;
+      }
+      if (parsed.pathname && parsed.pathname !== '/') return null;
+      host = parsed.hostname;
+    } catch {
+      return null;
+    }
+  }
+  host = host.toLowerCase().replace(/\.+$/, '');
+  if (!/^[a-z0-9.-]+$/.test(host) || host.includes('..') || !host.endsWith('.cloudflareaccess.com')) {
+    return null;
+  }
+  return { teamDomain: host, aud };
+}
+
+function keysFromCertificateEntries(certs: unknown): AccessJwk[] {
+  if (!Array.isArray(certs)) return [];
+  const keys: AccessJwk[] = [];
+  for (const entry of certs) {
+    if (!entry || typeof entry !== 'object') continue;
+    const cert = (entry as { cert?: unknown }).cert;
+    const kid = (entry as { kid?: unknown }).kid;
+    if (typeof cert !== 'string' || !cert.includes('BEGIN CERTIFICATE')) continue;
+    try {
+      const exported = crypto.createPublicKey(cert).export({ format: 'jwk' }) as AccessJwk;
+      if (exported.kty === 'RSA' && exported.n && exported.e) {
+        keys.push({ ...exported, kid: typeof kid === 'string' ? kid : exported.kid });
+      }
+    } catch {
+      // Skip a malformed certificate and keep looking.
+    }
+  }
+  return keys;
+}
+
+async function loadCloudflareAccessKeys(teamDomain: string, force = false): Promise<AccessJwk[]> {
+  const now = Date.now();
+  const cached = accessCertCache.get(teamDomain);
+  if (!force && cached && cached.expiresAt > now) return cached.keys;
+
+  const response = await fetch(`https://${teamDomain}/cdn-cgi/access/certs`, {
+    method: 'GET',
+    redirect: 'manual',
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (response.status >= 300 && response.status < 400) {
+    throw new Error('CERT_REDIRECT');
+  }
+  if (!response.ok) {
+    throw new Error('CERT_HTTP');
+  }
+  const payload = (await response.json()) as { keys?: AccessJwk[]; public_certs?: unknown };
+  const fromJwks = Array.isArray(payload.keys)
+    ? payload.keys.filter((key) => key && key.kty === 'RSA' && typeof key.n === 'string' && typeof key.e === 'string')
+    : [];
+  const keys = fromJwks.length > 0 ? fromJwks : keysFromCertificateEntries(payload.public_certs);
+  if (keys.length === 0) {
+    throw new Error('CERT_EMPTY');
+  }
+  accessCertCache.set(teamDomain, { expiresAt: now + ACCESS_CERT_TTL_MS, keys });
+  return keys;
+}
+
+function decodeJwtJson(part: string): unknown {
+  return JSON.parse(Buffer.from(part, 'base64url').toString('utf8'));
+}
+
+async function verifyCloudflareAccessJwt(jwt: string, access: CloudflareAccessConfig): Promise<boolean> {
+  const parts = jwt.split('.');
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return false;
+  const [encodedHeader, encodedPayload, encodedSig] = parts;
+
+  let header: { alg?: unknown; kid?: unknown };
+  let claims: { aud?: unknown; iss?: unknown; exp?: unknown; nbf?: unknown };
+  try {
+    header = decodeJwtJson(encodedHeader) as { alg?: unknown; kid?: unknown };
+    claims = decodeJwtJson(encodedPayload) as { aud?: unknown; iss?: unknown; exp?: unknown; nbf?: unknown };
+  } catch {
+    return false;
+  }
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) return false;
+  if (claims.iss !== `https://${access.teamDomain}`) return false;
+
+  const audOk =
+    claims.aud === access.aud || (Array.isArray(claims.aud) && claims.aud.includes(access.aud));
+  if (!audOk) return false;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (typeof claims.exp !== 'number' || nowSec > claims.exp + 60) return false;
+  if (typeof claims.nbf === 'number' && nowSec + 60 < claims.nbf) return false;
+
+  let keys = await loadCloudflareAccessKeys(access.teamDomain);
+  let jwk = keys.find((key) => key.kid === header.kid);
+  if (!jwk) {
+    keys = await loadCloudflareAccessKeys(access.teamDomain, true);
+    jwk = keys.find((key) => key.kid === header.kid);
+  }
+  if (!jwk) return false;
+
+  const signature = Buffer.from(encodedSig, 'base64url');
+  const keyObject = crypto.createPublicKey({ key: jwk as crypto.JsonWebKey, format: 'jwk' });
+  return crypto.verify('RSA-SHA256', Buffer.from(`${encodedHeader}.${encodedPayload}`), keyObject, signature);
+}
+
+async function assertSessionIssueAllowed(
+  req: Request
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const mode = (process.env.STUDIO_SESSION_ISSUE_MODE || '').trim().toLowerCase();
+  if (mode === 'dev-open' && process.env.NODE_ENV !== 'production' && isDirectLoopbackPeer(req)) {
+    return { ok: true };
+  }
+
+  const access = configuredCloudflareAccess();
+  if (!access) {
+    return { ok: false, status: 503, error: 'SESSION_ISSUE_LOCKED' };
+  }
+
+  const assertionHeader = req.headers['cf-access-jwt-assertion'];
+  const jwt = Array.isArray(assertionHeader) ? assertionHeader[0] : assertionHeader;
+  if (!jwt || typeof jwt !== 'string' || jwt.split('.').length !== 3 || jwt.length > 16_384) {
+    return { ok: false, status: 401, error: 'CLOUDFLARE_ACCESS_REQUIRED' };
+  }
+
+  try {
+    const valid = await verifyCloudflareAccessJwt(jwt, access);
+    if (!valid) {
+      return { ok: false, status: 401, error: 'CLOUDFLARE_ACCESS_INVALID' };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, status: 503, error: 'CLOUDFLARE_ACCESS_UNAVAILABLE' };
+  }
+}
+
 function isAllowedStudioOrigin(req: Request): boolean {
   const originHeader = req.headers.origin;
   if (!originHeader || typeof originHeader !== 'string') {
@@ -427,37 +623,70 @@ authSessionRouter.post('/verify', handleVerify);
 
 /**
  * POST /issue
- * Issues a signed 15-minute HMAC-SHA256 session token scoped strictly to CYBERCORE-ai-studio.
+ * Fail closed. Mints a signed 15-minute HMAC-SHA256 studio session only after
+ * a verified Cloudflare Access JWT, or when the TCP peer is loopback,
+ * STUDIO_SESSION_ISSUE_MODE=dev-open, and NODE_ENV is not production.
+ * A spoofed Host header does not qualify.
+ * Cloudflare Access must sit in front of this route on any public host.
+ * A Stardusk module token is never accepted here.
  */
 authSessionRouter.post('/issue', (req: Request, res: Response) => {
   const timestamp = new Date().toISOString();
 
-  if (!isAllowedStudioOrigin(req)) {
-    res.status(403).json({
-      ok: false,
-      authenticated: false,
-      error: 'FORBIDDEN_CROSS_ORIGIN_SESSION_ISSUE',
+  void (async () => {
+    if (!isAllowedStudioOrigin(req)) {
+      res.status(403).json({
+        ok: false,
+        authenticated: false,
+        error: 'FORBIDDEN_CROSS_ORIGIN_SESSION_ISSUE',
+        mode: 'node-hmac-v2',
+        timestamp,
+      });
+      return;
+    }
+
+    const gate = await assertSessionIssueAllowed(req);
+    if (!gate.ok) {
+      res.status(gate.status).json({
+        ok: false,
+        authenticated: false,
+        error: gate.error,
+        mode: 'node-hmac-v2',
+        detail:
+          gate.error === 'SESSION_ISSUE_LOCKED'
+            ? 'Cloudflare Access must sit in front of /api/auth/session. Set CLOUDFLARE_ACCESS_TEAM_DOMAIN and CLOUDFLARE_ACCESS_AUD.'
+            : undefined,
+        timestamp,
+      });
+      return;
+    }
+
+    const minted = mintSessionToken();
+    setSessionCookie(res, minted.token);
+
+    res.status(200).json({
+      ok: true,
+      authenticated: true,
+      sessionActive: true,
+      token: minted.token,
+      jti: minted.jti,
+      sub: minted.sub,
+      scopes: minted.scopes,
+      expiresAt: minted.expiresAt,
+      expiresIn: minted.expiresIn,
       mode: 'node-hmac-v2',
       timestamp,
     });
-    return;
-  }
-
-  const minted = mintSessionToken();
-  setSessionCookie(res, minted.token);
-
-  res.status(200).json({
-    ok: true,
-    authenticated: true,
-    sessionActive: true,
-    token: minted.token,
-    jti: minted.jti,
-    sub: minted.sub,
-    scopes: minted.scopes,
-    expiresAt: minted.expiresAt,
-    expiresIn: minted.expiresIn,
-    mode: 'node-hmac-v2',
-    timestamp,
+  })().catch(() => {
+    if (!res.headersSent) {
+      res.status(503).json({
+        ok: false,
+        authenticated: false,
+        error: 'SESSION_ISSUE_LOCKED',
+        mode: 'node-hmac-v2',
+        timestamp,
+      });
+    }
   });
 });
 
@@ -538,5 +767,44 @@ authSessionRouter.post('/revoke', (req: Request, res: Response) => {
     timestamp,
   });
 });
+
+/**
+ * Gate a studio API route to a valid, non-revoked operator session.
+ * Accepts Authorization: Bearer or the studio session cookie. Does not
+ * accept a token in the request body. Refuses sdk_ module tokens so the
+ * Stardusk credential can never be presented as a studio session.
+ *
+ * Write routes pass `{ write: true }` and require `studio:operator`.
+ * Read routes accept `studio:operator` or `stardust:read`.
+ */
+export function requireStudioSession(
+  req: Request,
+  res: Response,
+  options?: { write?: boolean }
+): SessionTokenPayload | null {
+  if (!isAllowedStudioOrigin(req)) {
+    res.status(403).json({ ok: false, error: 'ORIGIN_NOT_ALLOWED' });
+    return null;
+  }
+  const extracted = extractSessionTokenFromRequest(req, false);
+  if (extracted?.token.startsWith('sdk_')) {
+    res.status(401).json({ ok: false, error: 'MODULE_TOKEN_NOT_ACCEPTED' });
+    return null;
+  }
+  const result = verifySessionToken(extracted?.token);
+  if (!result.valid || !result.payload) {
+    res.status(401).json({ ok: false, error: result.reason || 'UNAUTHORIZED' });
+    return null;
+  }
+  const scopes = result.payload.scopes || [];
+  const allowed = options?.write
+    ? scopes.includes('studio:operator')
+    : scopes.includes('studio:operator') || scopes.includes('stardust:read');
+  if (!allowed) {
+    res.status(403).json({ ok: false, error: 'INSUFFICIENT_SCOPE' });
+    return null;
+  }
+  return result.payload;
+}
 
 export default authSessionRouter;

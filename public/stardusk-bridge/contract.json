@@ -13,8 +13,9 @@
     "ingest": "POST /api/rpc/research/ingest",
     "decisions": "POST /api/rpc/research/decisions",
     "contract": "GET /api/rpc/research/contract",
-    "state": "GET /api/rpc/research/state"
+    "state": "GET /api/rpc/research/state (studio session required)"
   },
+  "operatorAuth": "State, token mint, revoke, and review fail closed without a studio operator session. POST /api/auth/session/issue is locked unless Cloudflare Access sits in front of it. The browser never sends a module token. POST /sync-remote does not accept a token or call another host.",
   "envelope": "{\"json\": VALUE}",
   "externalExecutionAuthorized": false,
   "workstreams": [

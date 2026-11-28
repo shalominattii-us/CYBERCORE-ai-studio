@@ -21,6 +21,7 @@ import {
   Video,
   Volume2,
 } from 'lucide-react';
+import { StarduskStarDesk } from './StarduskStarDesk';
 import type {
   AvatarBroadcastState,
   AvatarCameraMode,
@@ -1573,6 +1574,8 @@ export const OpenPlanterStudioSuite: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <StarduskStarDesk />
 
           {/* Recursive Ephemeral VM Fleet Manager */}
           <div className="rounded-xl border border-cyan-500/30 bg-slate-900/80 p-3.5 flex flex-col gap-3 flex-1">

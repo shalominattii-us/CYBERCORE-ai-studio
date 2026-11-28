@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from 'express';
 import crypto from 'node:crypto';
 import { emitEphemeralNanotransaction, getNanotransactionSnapshot } from './nanotransactionRewards.ts';
+import { requireStudioSession } from './authSession.ts';
 
 /**
  * Stardusk Orbital Research Lab — Sovereign OS Research Bridge (Contract v1.0)
@@ -10,7 +11,10 @@ import { emitEphemeralNanotransaction, getNanotransactionSnapshot } from './nano
  * - Scoped 90-day `sdk_...` module credentials (plaintext shown once; only SHA-256 hash stored)
  * - `POST /api/rpc/research/ingest` (`research:ingest` scope, atomic batch <=50 findings, exact dedup, 409 conflict rollback)
  * - `POST /api/rpc/research/decisions` (`decisions:read` scope, cursor pagination, `externalExecutionAuthorized: false`)
- * - Bidirectional sync to external `STARDUSK_ORIGIN` + `STARDUSK_MODULE_TOKEN` (no-redirect bearer safety)
+ * - Operator routes (state, token mint, revoke, review) require a studio session and fail closed.
+ *   The browser never sends or displays an sdk_ module token.
+ * - POST /sync-remote is retired. It does not read a module token or call another host.
+ *   scripts/stardusk_bridge.py reads STARDUSK_ORIGIN and STARDUSK_MODULE_TOKEN from the server environment.
  * - Mints Ephemeral Nanotransaction Store-of-Value receipts (70% Operator / 30% AI) on verified research workstreams.
  */
 
@@ -361,12 +365,14 @@ starduskResearchBridgeRouter.get(['/', '/contract'], (_req: Request, res: Respon
     endpoints: {
       ingest: 'POST /api/rpc/research/ingest',
       decisions: 'POST /api/rpc/research/decisions',
-      status: 'GET /api/rpc/research/state',
-      mintToken: 'POST /api/rpc/research/tokens',
-      revokeToken: 'POST /api/rpc/research/tokens/revoke',
-      ownerReview: 'POST /api/rpc/research/review',
-      remoteSync: 'POST /api/rpc/research/sync-remote',
+      status: 'GET /api/rpc/research/state (studio session required)',
+      mintToken: 'POST /api/rpc/research/tokens (studio operator session required; not called by the browser)',
+      revokeToken: 'POST /api/rpc/research/tokens/revoke (studio operator session required)',
+      ownerReview: 'POST /api/rpc/research/review (studio operator session required)',
+      remoteSync: 'removed — set STARDUSK_ORIGIN and STARDUSK_MODULE_TOKEN for scripts/stardusk_bridge.py',
     },
+    operatorAuth:
+      'State, token, and review routes fail closed without a studio session. POST /api/auth/session/issue is locked unless Cloudflare Access sits in front of it.',
     envelopeFormat: '{"json": VALUE}',
     externalExecutionAuthorized: false,
     activeRecordCount: recordsByModuleKey.size,
@@ -376,7 +382,8 @@ starduskResearchBridgeRouter.get(['/', '/contract'], (_req: Request, res: Respon
 });
 
 // State summary for Stardusk Control Center UI
-starduskResearchBridgeRouter.get('/state', (_req: Request, res: Response) => {
+starduskResearchBridgeRouter.get('/state', (req: Request, res: Response) => {
+  if (!requireStudioSession(req, res)) return;
   res.json({
     ok: true,
     schemaVersion: '1.0',
@@ -416,6 +423,7 @@ starduskResearchBridgeRouter.get('/state', (_req: Request, res: Response) => {
 
 // Mint scoped 90-day `sdk_...` module credential (plaintext returned ONCE; only SHA-256 hash stored)
 starduskResearchBridgeRouter.post('/tokens', (req: Request, res: Response) => {
+  if (!requireStudioSession(req, res, { write: true })) return;
   const body = (req.body || {}) as { label?: string };
   const rawToken = `sdk_${crypto.randomBytes(24).toString('hex')}`;
   const now = new Date();
@@ -447,6 +455,7 @@ starduskResearchBridgeRouter.post('/tokens', (req: Request, res: Response) => {
 });
 
 starduskResearchBridgeRouter.post('/tokens/revoke', (req: Request, res: Response) => {
+  if (!requireStudioSession(req, res, { write: true })) return;
   const { credentialId } = (req.body || {}) as { credentialId?: string };
   const found = moduleCredentials.find((c) => c.credentialId === credentialId);
   if (!found) {
@@ -648,6 +657,7 @@ starduskResearchBridgeRouter.post('/decisions', (req: Request, res: Response) =>
 
 // Owner Review Action (Approves internally or requests changes; editing resets status to Awaiting review)
 starduskResearchBridgeRouter.post('/review', (req: Request, res: Response) => {
+  if (!requireStudioSession(req, res, { write: true })) return;
   const body = (req.body || {}) as {
     moduleId?: string;
     externalId?: string;
@@ -702,84 +712,17 @@ starduskResearchBridgeRouter.post('/review', (req: Request, res: Response) => {
   res.json({ ok: true, decision: entry, record: rec, nanotransaction: nanoTx });
 });
 
-// Outbound Connector: Push Sovereign OS Orbital Brief to any published Runable Stardusk Origin + Pull Decisions
-starduskResearchBridgeRouter.post('/sync-remote', async (req: Request, res: Response) => {
-  const body = (req.body || {}) as {
-    starduskOrigin?: string;
-    moduleToken?: string;
-    moduleId?: string;
-  };
-  const origin = (body.starduskOrigin || process.env.STARDUSK_ORIGIN || '').trim().replace(/\/+$/, '');
-  const token = (body.moduleToken || process.env.STARDUSK_MODULE_TOKEN || '').trim();
-  const moduleId = (body.moduleId || 'sovereign.research.orbital').trim();
-
-  if (!origin.startsWith('https://')) {
-    res.status(400).json({ ok: false, error: 'starduskOrigin must be an HTTPS app origin.' });
-    return;
-  }
-  if (!token.startsWith('sdk_')) {
-    res.status(400).json({ ok: false, error: 'moduleToken must start with sdk_.' });
-    return;
-  }
-
-  const briefValue = {
-    schemaVersion: '1.0',
-    moduleId,
-    findings: Array.from(recordsByModuleKey.values()).slice(0, 25).map((r) => ({
-      externalId: r.externalId,
-      kind: r.kind,
-      title: r.title,
-      summary: r.summary,
-      category: r.category,
-      researchedAt: r.researchedAt,
-      sources: r.sources,
-      evidence: r.evidence,
-      assumptions: r.assumptions,
-      unresolvedQuestions: r.unresolvedQuestions,
-      detail: r.detail,
-    })),
-  };
-
-  try {
-    // Never follow redirects so Bearer sdk_ token never leaks cross-origin
-    const ingestRes = await fetch(`${origin}/api/rpc/research/ingest`, {
-      method: 'POST',
-      redirect: 'manual',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ json: briefValue }),
-      signal: AbortSignal.timeout(20_000),
-    });
-
-    const decisionsRes = await fetch(`${origin}/api/rpc/research/decisions`, {
-      method: 'POST',
-      redirect: 'manual',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ json: { moduleId, limit: 50 } }),
-      signal: AbortSignal.timeout(20_000),
-    });
-
-    const ingestJson = await ingestRes.json().catch(() => null);
-    const decisionsJson = await decisionsRes.json().catch(() => null);
-
-    res.json({
-      ok: ingestRes.ok && decisionsRes.ok,
-      ingestStatus: ingestRes.status,
-      decisionsStatus: decisionsRes.status,
-      ingestResult: ingestJson,
-      decisionsResult: decisionsJson,
-    });
-  } catch (err) {
-    res.status(502).json({
-      ok: false,
-      error: err instanceof Error ? err.message : 'Remote Stardusk sync failed',
-    });
-  }
+// Remote sync no longer accepts an origin or module token from the client.
+// scripts/stardusk_bridge.py reads STARDUSK_ORIGIN and STARDUSK_MODULE_TOKEN
+// from the server environment. This handler ignores the body.
+starduskResearchBridgeRouter.all('/sync-remote', (req: Request, res: Response) => {
+  if (!requireStudioSession(req, res, { write: true })) return;
+  res.status(410).json({
+    ok: false,
+    error: 'SYNC_REMOTE_REMOVED',
+    detail:
+      'Remote sync does not accept a module token. Set STARDUSK_ORIGIN and STARDUSK_MODULE_TOKEN on the server and use scripts/stardusk_bridge.py.',
+  });
 });
 
 export default starduskResearchBridgeRouter;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Key, CheckCircle2, Copy, Send, RefreshCw, ExternalLink, FileText } from 'lucide-react';
+import { Shield, CheckCircle2, Copy, RefreshCw, ExternalLink, FileText } from 'lucide-react';
 
 interface OrbitalFindingRecord {
   recordId: string;
@@ -17,50 +17,40 @@ export const StarduskOrbitalBridgePanel: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
   const [records, setRecords] = useState<OrbitalFindingRecord[]>([]);
   const [exportJson, setExportJson] = useState<string>('');
-  const [mintedSdkToken, setMintedSdkToken] = useState<string | null>(null);
-  const [remoteOrigin, setRemoteOrigin] = useState<string>('');
-  const [remoteToken, setRemoteToken] = useState<string>('');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const loadState = useCallback(async () => {
     try {
-      const res = await fetch('/api/rpc/research/state');
+      const res = await fetch('/api/rpc/research/state', { credentials: 'include' });
+      if (res.status === 401 || res.status === 403) {
+        setRecords([]);
+        setExportJson('');
+        setStatusMsg('Studio operator session required. Sign in through Cloudflare Access. This panel does not mint or accept a module token.');
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.records)) setRecords(data.records);
-        if (data.exportBriefV1) setExportJson(JSON.stringify(data.exportBriefV1, null, 2));
+        if (data.exportBriefV1) {
+          setExportJson(JSON.stringify(data.exportBriefV1, null, 2).replace(/sdk_[A-Za-z0-9_-]+/g, '[redacted]'));
+        }
       }
-    } catch {}
+    } catch {
+      setStatusMsg('Research state is unavailable.');
+    }
   }, []);
 
   useEffect(() => {
     void loadState();
   }, [loadState]);
 
-  const handleMintToken = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch('/api/rpc/research/tokens', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: 'Runable <-> Sovereign OS Orbital Bridge' }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMintedSdkToken(data.plaintextTokenShownOnce || null);
-        setStatusMsg('Scoped 90-day sdk_ module token minted (SHA-256 hash stored; copy plaintext now).');
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleReview = async (externalId: string, decision: 'Approved internally' | 'Changes requested') => {
     setBusy(true);
     try {
       const res = await fetch('/api/rpc/research/review', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           moduleId: 'sovereign.research.orbital',
@@ -69,37 +59,14 @@ export const StarduskOrbitalBridgePanel: React.FC = () => {
           rationale: `Owner review in Stardusk Sovereign Portal (${decision}).`,
         }),
       });
+      if (res.status === 401 || res.status === 403) {
+        setStatusMsg('Studio operator session required before a review can be recorded.');
+        return;
+      }
       if (res.ok) {
         await loadState();
-        setStatusMsg(`Recorded "${decision}" on ${externalId} (+Nanotransaction SOV minted).`);
+        setStatusMsg(`Recorded "${decision}" on ${externalId}.`);
       }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleRemoteSync = async () => {
-    if (!remoteOrigin || !remoteToken) {
-      setStatusMsg('Enter published Runable Stardusk HTTPS origin and sdk_ module token to sync remotely.');
-      return;
-    }
-    setBusy(true);
-    try {
-      const res = await fetch('/api/rpc/research/sync-remote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          starduskOrigin: remoteOrigin,
-          moduleToken: remoteToken,
-          moduleId: 'sovereign.research.orbital',
-        }),
-      });
-      const data = await res.json();
-      setStatusMsg(
-        data.ok
-          ? `Synced Workstreams 1 & 2 to ${remoteOrigin} (ingest ${data.ingestStatus}, decisions ${data.decisionsStatus}).`
-          : `Remote sync error: ${data.error || 'Rejected'}`
-      );
     } finally {
       setBusy(false);
     }
@@ -190,21 +157,20 @@ export const StarduskOrbitalBridgePanel: React.FC = () => {
             ))}
           </div>
 
-          {/* Scoped sdk_ Credential Mint + Runable Sync */}
           <div className="lg:col-span-5 space-y-2.5 bg-[#05080F] border border-slate-800 rounded-lg p-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] uppercase text-cyan-300 font-semibold">
-                Scoped Module Credential &amp; Runable Sync
+                Operator session · no module token in the browser
               </span>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={handleMintToken}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 text-[10px] cursor-pointer"
+                  onClick={() => void loadState()}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] cursor-pointer"
                 >
-                  <Key className="w-3 h-3" />
-                  Mint sdk_ Token
+                  <RefreshCw className={`w-3 h-3 ${busy ? 'animate-spin' : ''}`} />
+                  Refresh
                 </button>
                 {exportJson && (
                   <button
@@ -221,49 +187,9 @@ export const StarduskOrbitalBridgePanel: React.FC = () => {
                 )}
               </div>
             </div>
-
-            {mintedSdkToken && (
-              <div className="p-2 rounded bg-emerald-950/40 border border-emerald-500/40 space-y-1">
-                <div className="text-[10px] text-emerald-300 font-bold">One-Time Scoped Module Token (90d · research:ingest + decisions:read):</div>
-                <div className="flex items-center justify-between gap-2">
-                  <code className="text-[10px] text-white break-all">{mintedSdkToken}</code>
-                  <button
-                    type="button"
-                    onClick={() => navigator.clipboard?.writeText(mintedSdkToken)}
-                    className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 text-[10px] shrink-0 cursor-pointer"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <input
-                type="url"
-                value={remoteOrigin}
-                onChange={(e) => setRemoteOrigin(e.target.value)}
-                placeholder="https://<published-stardusk-origin>"
-                className="px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-[11px] text-white"
-              />
-              <input
-                type="password"
-                value={remoteToken}
-                onChange={(e) => setRemoteToken(e.target.value)}
-                placeholder="sdk_..."
-                className="px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-[11px] text-white"
-              />
-            </div>
-
-            <button
-              type="button"
-              disabled={busy}
-              onClick={handleRemoteSync}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 font-semibold text-[11px] cursor-pointer"
-            >
-              {busy ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              <span>Sync Sovereign OS Brief ↔ Runable Stardusk Control Center</span>
-            </button>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              State, review, and token minting require a studio operator session. Remote sync reads STARDUSK_ORIGIN and STARDUSK_MODULE_TOKEN on the server only. Reviewed decisions for the avatar desk use STARDUSK_DESK_TOKEN and never appear in this browser as a credential.
+            </p>
 
             {statusMsg && (
               <div className="text-[10px] text-cyan-300 bg-cyan-950/30 border border-cyan-500/20 rounded px-2 py-1">
