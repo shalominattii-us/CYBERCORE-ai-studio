@@ -20,11 +20,15 @@ function loadRoots() {
 const ROOTS = loadRoots();
 const MAX_BYTES = 256 * 1024;
 const MAX_ENTRIES = 500;
-// Never list or read these, anywhere under a root.
-const DENY = [/(^|[\\/])\.git([\\/]|$)/i, /(^|[\\/])node_modules([\\/]|$)/i, /(^|[\\/])\.env(\..*)?$/i,
-  /\.(pem|key|p12|pfx|kdbx|jks|keystore|wallet|seed)$/i, /(secret|credential|token|private[-_]?key|mnemonic|password|dpapi)/i,
+// Never list or read these, anywhere under a root. A matching path segment blocks that
+// directory and every descendant, because the check runs on the full relative path.
+const DENY = [/(^|[\\/])\.git([\\/]|$)/i, /(^|[\\/])node_modules([\\/]|$)/i,
+  /(^|[\\/])\.env(\.[^\\/]*)?([\\/]|$)/i, /(^|[\\/])\.(npmrc|netrc|envrc)([\\/]|$)/i,
+  /(^|[\\/])id_(rsa|dsa|ecdsa|ed25519)(\.pub)?([\\/]|$)/i, /(^|[\\/])wallet\.dat([\\/]|$)/i,
+  /\.(pem|key|p12|pfx|kdbx|jks|keystore|wallet|seed)$/i,
+  /(secret|credential|token|private[-_]?key|mnemonic|password|dpapi|wallet|seed)/i,
   /(^|[\\/])\.(ssh|aws|gnupg|cloudflared)([\\/]|$)/i, /cert\.pem$/i];
-const denied = (rel) => DENY.some((r) => r.test(rel));
+const denied = (rel) => DENY.some((r) => r.test(String(rel || '').replace(/\\/g, '/')));
 
 function escapesRoot(rel) {
   return String(rel || '').split(/[\\/]+/).some((part) => part === '..');
@@ -38,6 +42,9 @@ function resolveFailure(error) {
 
 async function resolveInside(root, rel) {
   if (escapesRoot(rel)) throw new Error('outside_root');
+  // Reject the requested path before realpath so a symlink inside a denied directory
+  // cannot be followed out to an allowed file.
+  if (denied(rel)) throw new Error('denied_path');
   const base = await fs.realpath(ROOTS[root]);
   const target = await fs.realpath(path.resolve(base, rel || '.')); // follows symlinks, then checks containment
   const relOut = path.relative(base, target);
