@@ -282,17 +282,30 @@ function extractSessionTokenFromRequest(
   return null;
 }
 
-function requestHostname(req: Request): string {
-  const hostHeader = String(req.headers.host || '');
-  if (hostHeader.startsWith('[')) {
-    const end = hostHeader.indexOf(']');
-    return end > 0 ? hostHeader.slice(1, end).toLowerCase() : hostHeader.toLowerCase();
-  }
-  return hostHeader.split(':')[0].toLowerCase();
+function normalizePeerAddress(address: string | undefined): string {
+  const raw = (address || '').trim().toLowerCase();
+  if (raw.startsWith('::ffff:')) return raw.slice('::ffff:'.length);
+  return raw;
 }
 
-function isLoopbackHost(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+/**
+ * dev-open is granted only when the TCP peer is loopback. The Host header,
+ * X-Forwarded-Host, and X-Forwarded-For are ignored so a remote client cannot
+ * mint a session by claiming to be localhost. A forwarding header also refuses
+ * the escape, because a same-machine proxy would otherwise make every client
+ * look like 127.0.0.1.
+ */
+export function isDirectLoopbackPeer(req: Request): boolean {
+  if (
+    req.headers['x-forwarded-for'] ||
+    req.headers['x-forwarded-host'] ||
+    req.headers['x-real-ip'] ||
+    req.headers.forwarded
+  ) {
+    return false;
+  }
+  const peer = normalizePeerAddress(req.socket?.remoteAddress);
+  return peer === '127.0.0.1' || peer === '::1';
 }
 
 interface CloudflareAccessConfig {
@@ -317,8 +330,8 @@ const accessCertCache = new Map<string, { expiresAt: number; keys: AccessJwk[] }
  * closed until CLOUDFLARE_ACCESS_TEAM_DOMAIN and CLOUDFLARE_ACCESS_AUD are
  * set and the request carries a verified Cf-Access-Jwt-Assertion.
  * Loopback-only escape: STUDIO_SESSION_ISSUE_MODE=dev-open, and only when
- * NODE_ENV is not production. The Host header is not taken from
- * X-Forwarded-Host, so a public client cannot spoof loopback.
+ * NODE_ENV is not production and the TCP peer is 127.0.0.1 or ::1.
+ * The Host header is not consulted.
  */
 function configuredCloudflareAccess(): CloudflareAccessConfig | null {
   const rawDomain = (process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN || '').trim();
@@ -439,7 +452,7 @@ async function assertSessionIssueAllowed(
   req: Request
 ): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
   const mode = (process.env.STUDIO_SESSION_ISSUE_MODE || '').trim().toLowerCase();
-  if (mode === 'dev-open' && process.env.NODE_ENV !== 'production' && isLoopbackHost(requestHostname(req))) {
+  if (mode === 'dev-open' && process.env.NODE_ENV !== 'production' && isDirectLoopbackPeer(req)) {
     return { ok: true };
   }
 
@@ -611,8 +624,9 @@ authSessionRouter.post('/verify', handleVerify);
 /**
  * POST /issue
  * Fail closed. Mints a signed 15-minute HMAC-SHA256 studio session only after
- * a verified Cloudflare Access JWT, or on loopback when
- * STUDIO_SESSION_ISSUE_MODE=dev-open and NODE_ENV is not production.
+ * a verified Cloudflare Access JWT, or when the TCP peer is loopback,
+ * STUDIO_SESSION_ISSUE_MODE=dev-open, and NODE_ENV is not production.
+ * A spoofed Host header does not qualify.
  * Cloudflare Access must sit in front of this route on any public host.
  * A Stardusk module token is never accepted here.
  */
