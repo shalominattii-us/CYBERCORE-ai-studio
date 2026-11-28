@@ -26,9 +26,21 @@ const DENY = [/(^|[\\/])\.git([\\/]|$)/i, /(^|[\\/])node_modules([\\/]|$)/i,
   /(^|[\\/])\.env(\.[^\\/]*)?([\\/]|$)/i, /(^|[\\/])\.(npmrc|netrc|envrc)([\\/]|$)/i,
   /(^|[\\/])id_(rsa|dsa|ecdsa|ed25519)(\.pub)?([\\/]|$)/i, /(^|[\\/])wallet\.dat([\\/]|$)/i,
   /\.(pem|key|p12|pfx|kdbx|jks|keystore|wallet|seed)$/i,
-  /(secret|credential|token|private[-_]?key|mnemonic|password|dpapi|wallet|seed)/i,
   /(^|[\\/])\.(ssh|aws|gnupg|cloudflared)([\\/]|$)/i, /cert\.pem$/i];
-const denied = (rel) => DENY.some((r) => r.test(String(rel || '').replace(/\\/g, '/')));
+// Whole segment or filename stem only, so tokenizer.js stays readable and creds.json does not.
+const SECRET_NAME = /^(?:secrets?|credentials?|creds|tokens?|private[-_]?keys?|mnemonics?|passwords?|dpapi|wallets?|seeds?)$/i;
+function secretNamed(rel) {
+  return String(rel || '').split(/[\\/]+/).some((segment) => {
+    if (!segment || segment === '.' || segment === '..') return false;
+    if (SECRET_NAME.test(segment)) return true;
+    const stem = segment.replace(/\.[^.]+$/, '');
+    return stem !== segment && SECRET_NAME.test(stem);
+  });
+}
+const denied = (rel) => {
+  const normalized = String(rel || '').replace(/\\/g, '/');
+  return secretNamed(normalized) || DENY.some((r) => r.test(normalized));
+};
 
 function escapesRoot(rel) {
   return String(rel || '').split(/[\\/]+/).some((part) => part === '..');
