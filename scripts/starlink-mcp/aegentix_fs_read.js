@@ -30,6 +30,12 @@ function escapesRoot(rel) {
   return String(rel || '').split(/[\\/]+/).some((part) => part === '..');
 }
 
+function resolveFailure(error) {
+  if (error && (error.message === 'outside_root' || error.message === 'denied_path')) return error.message;
+  if (error && (error.code === 'EACCES' || error.code === 'EPERM' || error.code === 'ELOOP')) return 'read_failed';
+  return 'not_found';
+}
+
 async function resolveInside(root, rel) {
   if (escapesRoot(rel)) throw new Error('outside_root');
   const base = await fs.realpath(ROOTS[root]);
@@ -40,11 +46,20 @@ async function resolveInside(root, rel) {
   return { target, relOut };
 }
 
+const rootNames = Object.keys(ROOTS);
+const rootProperty = {
+  type: 'string',
+  description: rootNames.length
+    ? 'Allowlisted root name.'
+    : 'No roots are configured. Set AEGENTIX_FS_ROOTS to absolute folders before calling.',
+};
+if (rootNames.length) rootProperty.enum = rootNames;
+
 const definition = {
   name: 'aegentix_fs_read',
   description: 'Read-only: list a folder or read a text file inside an allowlisted AEGENTIX root (e.g. space-station, stardusk). Secrets, keys, .env, .git and wallet files are always blocked. No writes.',
   inputSchema: { type: 'object', additionalProperties: false, required: ['root'], properties: {
-    root: { type: 'string', enum: Object.keys(ROOTS).length ? Object.keys(ROOTS) : ['unset'] },
+    root: rootProperty,
     action: { type: 'string', enum: ['list', 'read'], description: 'Default list.' },
     path: { type: 'string', description: 'Relative path inside the root. Default ".".', maxLength: 512 },
   } },
@@ -56,10 +71,11 @@ async function handler(args = {}) {
   if (!args || typeof args !== 'object' || Array.isArray(args)) return fail('invalid_input');
   if (Object.keys(args).some((k) => !['root', 'action', 'path'].includes(k))) return fail('invalid_input');
   const { root, action = 'list', path: rel = '.' } = args;
+  if (!Object.keys(ROOTS).length) return fail('not_configured');
   if (typeof root !== 'string' || !Object.prototype.hasOwnProperty.call(ROOTS, root)) return fail('unknown_root');
   if (!['list', 'read'].includes(action) || typeof rel !== 'string' || rel.includes('\0')) return fail('invalid_input');
   let t;
-  try { t = await resolveInside(root, rel); } catch (e) { return fail(['outside_root', 'denied_path'].includes(e.message) ? e.message : 'not_found'); }
+  try { t = await resolveInside(root, rel); } catch (e) { return fail(resolveFailure(e)); }
   try {
     const st = await fs.stat(t.target);
     if (action === 'list') {
@@ -76,6 +92,7 @@ async function handler(args = {}) {
     try {
       const buf = Buffer.alloc(Math.min(st.size, MAX_BYTES));
       await fh.read(buf, 0, buf.length, 0);
+      // A null byte in the sampled prefix is treated as binary and is not returned.
       if (buf.includes(0)) return fail('binary_file');
       const out = { root, path: t.relOut, size: st.size, truncated: st.size > MAX_BYTES, text: buf.toString('utf8') };
       return { content: [{ type: 'text', text: JSON.stringify(out) }], structuredContent: out };

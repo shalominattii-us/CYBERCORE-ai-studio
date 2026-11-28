@@ -4,7 +4,7 @@
 // Call ONLY after the server's existing auth (CF Access JWT or bearer) has passed.
 'use strict';
 const { execFile } = require('node:child_process');
-const fs = require('node:fs');
+const fs = require('node:fs/promises');
 const nodePath = require('node:path');
 
 // ---- Allowlist: checkout name -> absolute local path (server-side only, never returned). ----
@@ -36,7 +36,8 @@ function git(cwd, args) {
   });
 }
 
-// Normalize any remote form to "owner/repo"; drops scheme, host, credentials, query, ".git".
+// Normalize a github.com remote to "owner/repo". Host, credentials, query, and ".git" are dropped.
+// Other hosts, including GitHub Enterprise, stay unrecognized so the host is not discarded.
 const ALLOWED_HOSTS = new Set(['github.com']);
 function normalizeRemote(raw) {
   const s = String(raw || '').trim();
@@ -56,12 +57,21 @@ function normalizeRemote(raw) {
   return ok.test(owner) && ok.test(repo) ? `${owner}/${repo}` : null;
 }
 
+const checkoutNames = Object.keys(CHECKOUTS);
+const nameProperty = {
+  type: 'string',
+  description: checkoutNames.length
+    ? `Allowlisted checkout. Default ${DEFAULT_CHECKOUT}.`
+    : 'No checkout is configured. Set AEGENTIX_REPO_CHECKOUTS to an absolute path before calling.',
+};
+if (checkoutNames.length) nameProperty.enum = checkoutNames;
+
 const definition = {
   name: 'aegentix_repo_info',
-  description: 'Read-only: returns owner/repo, branch and short HEAD sha for an allowlisted AEGENTIX checkout (default: space-station). No paths or URLs are returned.',
+  description: 'Read-only: returns owner/repo, branch and short HEAD sha for an allowlisted github.com checkout (default: space-station). No paths or URLs are returned.',
   inputSchema: {
     type: 'object',
-    properties: { name: { type: 'string', enum: Object.keys(CHECKOUTS).length ? Object.keys(CHECKOUTS) : [DEFAULT_CHECKOUT] } },
+    properties: { name: nameProperty },
     additionalProperties: false,
   },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -72,10 +82,14 @@ async function handler(args = {}) {
   if (args === null || typeof args !== 'object' || Array.isArray(args)) return fail('invalid_input');
   const extra = Object.keys(args).filter((k) => k !== 'name');
   if (extra.length) return fail('invalid_input');
+  if (!Object.keys(CHECKOUTS).length) return fail('not_configured');
   const name = args.name === undefined ? DEFAULT_CHECKOUT : args.name;
   if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(CHECKOUTS, name)) return fail('unknown_checkout');
   const cwd = CHECKOUTS[name];
-  try { if (!fs.statSync(cwd).isDirectory()) return fail('checkout_unavailable'); } catch { return fail('checkout_unavailable'); }
+  try {
+    const st = await fs.stat(cwd);
+    if (!st.isDirectory()) return fail('checkout_unavailable');
+  } catch { return fail('checkout_unavailable'); }
   try {
     const [remote, branch, head] = await Promise.all([
       git(cwd, ['remote', 'get-url', 'origin']),
